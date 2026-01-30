@@ -729,10 +729,14 @@
     }
   }
 
+  function normalizeTag(tag){
+    return String(tag || "").trim().toLowerCase();
+  }
+
   function parseTags(str){
     return (str || "")
       .split(",")
-      .map(s => s.trim())
+      .map(normalizeTag)
       .filter(Boolean)
       .slice(0, 20);
   }
@@ -908,7 +912,7 @@
           id: uid(),
           sourceUrl,
           mediaUrl,
-          tags: Array.isArray(it.tags) ? it.tags.map(t=>String(t).trim()).filter(Boolean) : [],
+          tags: Array.isArray(it.tags) ? it.tags.map(normalizeTag).filter(Boolean) : [],
           addedAt: typeof it.addedAt === "number" ? it.addedAt : now()
         });
         seen.add(key);
@@ -1397,14 +1401,18 @@
 
   // migrate super-old {url} shape if you ever used v1
   state.items = (state.items || []).map(it => {
+    const tags = Array.isArray(it?.tags) ? it.tags.map(normalizeTag).filter(Boolean) : [];
     if(it && it.url && !it.sourceUrl && !it.mediaUrl){
-      return { ...it, sourceUrl: it.url, mediaUrl: it.url };
+      return { ...it, sourceUrl: it.url, mediaUrl: it.url, tags };
     }
-    return it;
+    return { ...it, tags };
   });
 
   if(typeof state.ui?.page !== "number") state.ui = { activeTag: null, page: 1, selected: [] };
   if(!Array.isArray(state.ui.selected)) state.ui.selected = [];
+  if(typeof state.ui.activeTag === "string"){
+    state.ui.activeTag = normalizeTag(state.ui.activeTag) || null;
+  }
   if(!Array.isArray(state.items)) state.items = [];
   clampPage();
   save();
