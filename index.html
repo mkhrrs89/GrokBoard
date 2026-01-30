@@ -61,6 +61,10 @@
     .btn:active{ transform: translateY(1px); }
     .btn.primary{ border-color: rgba(122,167,255,0.35); box-shadow: 0 0 0 2px rgba(122,167,255,0.08) inset; }
     .btn.danger{ border-color: rgba(255,77,77,0.35); color: #ffd7d7; }
+    .btn.compact{
+      padding:7px 10px;
+      font-size:12px;
+    }
     .row{
       display:flex; gap:10px; flex-wrap:wrap;
       padding-bottom: 10px;
@@ -372,6 +376,24 @@
       body.controls-collapsed .fab{
         display:flex;
       }
+      #wipeBtn{ display:none; }
+      body.controls-collapsed .wrap{
+        padding-top:6px;
+        padding-bottom:0;
+      }
+      body.controls-collapsed .toprow{
+        padding-bottom:6px;
+      }
+      body.controls-collapsed .brand span{
+        display:none;
+      }
+      body.controls-collapsed .collapseBar{
+        padding-bottom:6px;
+      }
+      body.controls-collapsed #toggleControlsBtn{
+        padding:6px 10px;
+        font-size:12px;
+      }
     }
   </style>
 </head>
@@ -384,7 +406,7 @@
           <span>local-only mood board • autoplay loop • tag collections</span>
         </div>
         <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
-          <button class="btn" id="exportBtn">Export</button>
+          <button class="btn compact" id="exportBtn">Export</button>
           <button class="btn" id="importBtn">Import</button>
           <button class="btn danger" id="wipeBtn" title="Delete everything">Wipe</button>
         </div>
@@ -399,7 +421,7 @@
         <div class="row">
           <div class="input">
             <input id="urlInput" type="text" placeholder="Paste Grok Imagine public link (post URL) or direct .mp4/.m3u8"/>
-            <button class="btn primary" id="addBtn">Add</button>
+            <button class="btn primary compact" id="addBtn">Add</button>
           </div>
           <div class="input" style="flex: 1 1 220px;">
             <input id="tagInput" type="text" placeholder="Tags (comma-separated) e.g. neon, moody, sci-fi"/>
