@@ -440,6 +440,28 @@
         font-size:12px;
       }
     }
+
+    /* --- Compact inputs on mobile --- */
+@media (max-width: 640px){
+  .input{
+    padding: 6px 8px;      /* was 10px */
+    border-radius: 14px;   /* slightly tighter */
+    gap: 8px;
+  }
+
+  input[type="text"]{
+    font-size: 13px;       /* was 14px */
+    line-height: 1.15;
+    padding: 6px 0;        /* gives a controlled height */
+    min-height: 30px;      /* hard cap-ish */
+  }
+
+  .btn{
+    padding: 8px 10px;     /* keep button from being huge */
+    font-size: 13px;
+  }
+}
+
   </style>
 </head>
 <body>
@@ -1312,4 +1334,5 @@
 </script>
 </body>
 </html>
+
 
