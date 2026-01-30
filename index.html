@@ -492,6 +492,32 @@
   .hint{ padding: 4px 2px 8px; font-size: 11px; line-height: 1.15; }
 }
 
+
+/* --- Put URL + Tags on the same row on mobile --- */
+@media (max-width: 640px){
+  header .row{
+    flex-wrap: nowrap;          /* prevent stacking */
+    gap: 8px;
+  }
+
+  /* URL box (with Add button) takes more space */
+  header .row .input:first-child{
+    flex: 1 1 auto;
+    min-width: 0;              /* important so it can shrink */
+  }
+
+  /* Tags box takes less space */
+  header .row .input:last-child{
+    flex: 0 0 38%;
+    min-width: 0;
+  }
+
+  /* Prevent placeholder from forcing width */
+  header input[type="text"]{
+    min-width: 0;
+  }
+}
+
     
   </style>
 </head>
@@ -1365,6 +1391,7 @@
 </script>
 </body>
 </html>
+
 
 
 
