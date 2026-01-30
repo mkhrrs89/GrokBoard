@@ -665,6 +665,15 @@
     }
   }
 
+  function updateItemTags(id, tags){
+    const item = state.items.find(it => it.id === id);
+    if(!item) return;
+    item.tags = tags;
+    save();
+    render();
+    showToast("Tags updated ✨");
+  }
+
   function setActiveTag(tag){
     state.ui.activeTag = tag;
     state.ui.page = 1;
@@ -1057,6 +1066,7 @@
           <div class="cardBar">
             <div class="tagsLine">${warn}${tagPills}${more}</div>
             <div class="actions">
+              <button class="iconBtn" data-act="tags" title="Edit tags">🏷️</button>
               <button class="iconBtn danger" data-act="del" title="Delete">✕</button>
             </div>
           </div>
@@ -1083,6 +1093,12 @@
           e.stopPropagation();
           const act = btn.getAttribute("data-act");
           if(act === "del") deleteItem(id);
+          if(act === "tags"){
+            const current = item ? item.tags.join(", ") : "";
+            const next = prompt("Edit tags (comma-separated). Leave empty to clear:", current);
+            if(next === null) return;
+            updateItemTags(id, parseTags(next));
+          }
         });
       });
 
