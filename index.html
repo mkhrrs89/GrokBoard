@@ -518,6 +518,28 @@
   }
 }
 
+    /* Chips row: tags on left, Hide controls on right */
+.chipsRow{
+  display:flex;
+  align-items:flex-start; /* aligns button with top/first row */
+  gap: 10px;
+}
+
+.chipsRow .chips{
+  flex: 1 1 auto;
+  min-width: 0;          /* critical so chips can wrap */
+}
+
+.chipsRow #hideControlsBtn{
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+    @media (max-width: 640px){
+  .chipsRow{ gap: 8px; }
+  .chipsRow #hideControlsBtn{ padding: 7px 10px; }
+}
+
     
   </style>
 </head>
@@ -550,13 +572,14 @@
           </div>
         </div>
 
-        <div class="chips" id="tagChips"></div>
+<div class="chipsRow">
+  <div class="chips" id="tagChips"></div>
+  <button class="btn" id="hideControlsBtn">Hide controls</button>
+</div>
 
-        <input type="file" id="importFile" accept="application/json" />
+<input type="file" id="importFile" accept="application/json" />
 
-        <div class="controlsFooter">
-          <button class="btn" id="hideControlsBtn">Hide</button>
-        </div>
+        
       </div>
     </div>
   </header>
@@ -1391,6 +1414,7 @@
 </script>
 </body>
 </html>
+
 
 
 
