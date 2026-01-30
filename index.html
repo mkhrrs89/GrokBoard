@@ -321,6 +321,58 @@
       box-shadow: 0 18px 60px rgba(0,0,0,0.55);
       transform: translate3d(0,0,0);
     }
+
+    /* --- Collapsible header controls (mobile) --- */
+    .controls{ }
+
+    .collapseBar{
+      display:none;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding: 0 0 10px;
+    }
+
+    .collapseHint{
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .fab{
+      position: fixed;
+      right: 14px;
+      bottom: 88px; /* above pager */
+      z-index: 1001;
+      width: 52px;
+      height: 52px;
+      border-radius: 18px;
+      border: 1px solid rgba(122,167,255,0.35);
+      background: rgba(17,19,26,0.88);
+      color: var(--text);
+      font-size: 22px;
+      line-height: 1;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      backdrop-filter: blur(10px);
+      cursor: pointer;
+      user-select:none;
+    }
+    .fab:active{ transform: translateY(1px); }
+
+    /* Mobile behavior */
+    @media (max-width: 640px){
+      .collapseBar{ display:flex; }
+      body.controls-collapsed #controlsPanel{
+        display:none;
+      }
+      body.controls-collapsed .fab{
+        display:flex;
+      }
+    }
   </style>
 </head>
 <body>
@@ -338,23 +390,30 @@
         </div>
       </div>
 
-      <div class="row">
-        <div class="input">
-          <input id="urlInput" type="text" placeholder="Paste Grok Imagine public link (post URL) or direct .mp4/.m3u8"/>
-          <button class="btn primary" id="addBtn">Add</button>
-        </div>
-        <div class="input" style="flex: 1 1 220px;">
-          <input id="tagInput" type="text" placeholder="Tags (comma-separated) e.g. neon, moody, sci-fi"/>
-        </div>
+      <div class="collapseBar">
+        <button class="btn" id="toggleControlsBtn">Show controls</button>
+        <div class="collapseHint">Add links, tags, import/export</div>
       </div>
 
-      <div class="hint">
-        Paste Grok post links and I’ll try to resolve them to a direct video URL. Videos play muted + loop. Tap to full view. Drag ≡ to reorder.
+      <div class="controls" id="controlsPanel">
+        <div class="row">
+          <div class="input">
+            <input id="urlInput" type="text" placeholder="Paste Grok Imagine public link (post URL) or direct .mp4/.m3u8"/>
+            <button class="btn primary" id="addBtn">Add</button>
+          </div>
+          <div class="input" style="flex: 1 1 220px;">
+            <input id="tagInput" type="text" placeholder="Tags (comma-separated) e.g. neon, moody, sci-fi"/>
+          </div>
+        </div>
+
+        <div class="hint">
+          Paste Grok post links and I’ll try to resolve them to a direct video URL. Videos play muted + loop. Tap to full view. Drag ≡ to reorder.
+        </div>
+
+        <div class="chips" id="tagChips"></div>
+
+        <input type="file" id="importFile" accept="application/json" />
       </div>
-
-      <div class="chips" id="tagChips"></div>
-
-      <input type="file" id="importFile" accept="application/json" />
     </div>
   </header>
 
@@ -390,10 +449,12 @@
   </div>
 
   <div class="toast" id="toast"></div>
+  <button class="fab" id="toggleControlsFab" aria-label="Show controls">＋</button>
 
 <script>
 (() => {
   const LS_KEY = "grok_video_board_v2";
+  const UI_KEY = "grok_video_board_ui";
   const PAGE_SIZE = 50;
 
   // CHANGE THIS after you deploy your Worker:
@@ -430,6 +491,9 @@
   const toggleSoundBtn = document.getElementById("toggleSoundBtn");
 
   const toast = document.getElementById("toast");
+  const controlsPanel = document.getElementById("controlsPanel");
+  const toggleControlsBtn = document.getElementById("toggleControlsBtn");
+  const toggleControlsFab = document.getElementById("toggleControlsFab");
 
   // --- Utilities
   const now = () => Date.now();
@@ -456,6 +520,44 @@
       }
     }catch(e){
       console.warn("Load failed:", e);
+    }
+  }
+
+  function loadUI(){
+    try{
+      const raw = localStorage.getItem(UI_KEY);
+      if(!raw) return { collapsedMobile: true };
+      const j = JSON.parse(raw);
+      return { collapsedMobile: j.collapsedMobile !== false };
+    }catch{
+      return { collapsedMobile: true };
+    }
+  }
+
+  function saveUI(ui){
+    localStorage.setItem(UI_KEY, JSON.stringify(ui));
+  }
+
+  let uiState = loadUI();
+
+  function applyControlsCollapse(){
+    if(window.matchMedia("(max-width: 640px)").matches){
+      document.body.classList.toggle("controls-collapsed", !!uiState.collapsedMobile);
+    }else{
+      document.body.classList.remove("controls-collapsed");
+    }
+
+    const label = (document.body.classList.contains("controls-collapsed")) ? "Show controls" : "Hide controls";
+    if(toggleControlsBtn) toggleControlsBtn.textContent = label;
+  }
+
+  function toggleControls(){
+    uiState.collapsedMobile = !uiState.collapsedMobile;
+    saveUI(uiState);
+    applyControlsCollapse();
+
+    if(!document.body.classList.contains("controls-collapsed")){
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }
 
@@ -1034,6 +1136,9 @@
   window.addEventListener("keydown", (e) => {
     if(e.key === "Escape") closeViewer();
   });
+  toggleControlsBtn.addEventListener("click", toggleControls);
+  toggleControlsFab.addEventListener("click", toggleControls);
+  window.addEventListener("resize", applyControlsCollapse);
 
   // --- Boot
   load();
@@ -1051,6 +1156,7 @@
   clampPage();
   save();
   render();
+  applyControlsCollapse();
 })();
 </script>
 </body>
