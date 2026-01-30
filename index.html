@@ -771,16 +771,37 @@
     video.playsInline = true;
   }
 
-  // IntersectionObserver: pause off-screen vids for smoother scrolling
+  function wirePlaybackState(video){
+    if(video.dataset.playbackWired) return;
+    video.dataset.playbackWired = "true";
+    video.addEventListener("pause", () => {
+      if(video.dataset.autoPaused){
+        delete video.dataset.autoPaused;
+        return;
+      }
+      video.dataset.userPaused = "true";
+    });
+    video.addEventListener("play", () => {
+      delete video.dataset.userPaused;
+    });
+  }
+
+  function pauseVideo(video){
+    video.dataset.autoPaused = "true";
+    video.pause();
+  }
+
+  // IntersectionObserver: keep autoplay on when intersecting, respect user pauses
   const io = new IntersectionObserver((entries) => {
     for(const entry of entries){
       const v = entry.target;
       if(!(v instanceof HTMLVideoElement)) continue;
       configureAutoplayVideo(v);
+      wirePlaybackState(v);
       if(entry.isIntersecting){
-        v.play().catch(()=>{});
-      }else{
-        v.pause();
+        if(!v.dataset.userPaused){
+          v.play().catch(()=>{});
+        }
       }
     }
   }, { threshold: 0.25 });
@@ -859,7 +880,7 @@
 
     card.classList.add("dragging");
     const v = card.querySelector("video");
-    if(v) v.pause();
+    if(v) pauseVideo(v);
 
     drag.ghost = makeGhostFromCard(card, clientX, clientY);
     if(navigator.vibrate) navigator.vibrate(10);
@@ -981,6 +1002,8 @@
 
     viewerVideo.src = item.mediaUrl || item.sourceUrl;
     configureAutoplayVideo(viewerVideo);
+    wirePlaybackState(viewerVideo);
+    delete viewerVideo.dataset.userPaused;
     toggleSoundBtn.textContent = "Sound: Off";
     modal.classList.add("show");
     viewerVideo.play().catch(()=>{});
@@ -988,7 +1011,7 @@
 
   function closeViewer(){
     modal.classList.remove("show");
-    viewerVideo.pause();
+    pauseVideo(viewerVideo);
     viewerVideo.removeAttribute("src");
     viewerVideo.load();
     currentViewerId = null;
@@ -1110,8 +1133,11 @@
       const vid = card.querySelector("video");
 
       configureAutoplayVideo(vid);
+      wirePlaybackState(vid);
       io.observe(vid);
-      vid.play().catch(()=>{});
+      if(!vid.dataset.userPaused){
+        vid.play().catch(()=>{});
+      }
 
       // Tap video to open viewer (but not drag handle)
       vid.addEventListener("click", (e) => {
@@ -1134,7 +1160,7 @@
       });
 
       vid.addEventListener("error", () => {
-        vid.pause();
+        pauseVideo(vid);
       });
 
       wireDragForCard(card);
