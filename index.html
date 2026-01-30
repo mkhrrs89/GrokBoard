@@ -1,0 +1,1057 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Grok Video Board</title>
+  <style>
+    :root{
+      --bg:#0b0c10;
+      --panel:#11131a;
+      --panel2:#0f1016;
+      --text:#e9ecf1;
+      --muted:#9aa3b2;
+      --line:#202433;
+      --chip:#171a25;
+      --chipActive:#232845;
+      --danger:#ff4d4d;
+      --accent:#7aa7ff;
+      --radius:16px;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background:var(--bg);
+      color:var(--text);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    header{
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: linear-gradient(180deg, rgba(11,12,16,0.98), rgba(11,12,16,0.86));
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(10px);
+    }
+    .wrap{ max-width: 980px; margin: 0 auto; padding: 12px 12px 0; }
+    .toprow{
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      padding-bottom:10px;
+    }
+    .brand{
+      display:flex; flex-direction:column; line-height:1.1;
+    }
+    .brand strong{ font-size:14px; letter-spacing:0.2px; }
+    .brand span{ font-size:12px; color:var(--muted); }
+    .btn{
+      border:1px solid var(--line);
+      background: var(--panel);
+      color:var(--text);
+      border-radius:999px;
+      padding:10px 12px;
+      font-size:13px;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .btn:active{ transform: translateY(1px); }
+    .btn.primary{ border-color: rgba(122,167,255,0.35); box-shadow: 0 0 0 2px rgba(122,167,255,0.08) inset; }
+    .btn.danger{ border-color: rgba(255,77,77,0.35); color: #ffd7d7; }
+    .row{
+      display:flex; gap:10px; flex-wrap:wrap;
+      padding-bottom: 10px;
+    }
+    .input{
+      flex:1 1 360px;
+      display:flex;
+      gap:10px;
+      align-items:stretch;
+      background: var(--panel2);
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      padding:10px;
+    }
+    input[type="text"]{
+      flex:1;
+      border:none;
+      outline:none;
+      background: transparent;
+      color: var(--text);
+      font-size:14px;
+      min-width: 170px;
+    }
+    input::placeholder{ color: #6f788a; }
+    .chips{
+      display:flex; gap:8px; flex-wrap:wrap;
+      padding: 0 0 12px;
+    }
+    .chip{
+      background: var(--chip);
+      border:1px solid var(--line);
+      color: var(--text);
+      border-radius:999px;
+      padding:8px 10px;
+      font-size:12px;
+      cursor:pointer;
+      user-select:none;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      max-width: 100%;
+    }
+    .chip small{ color: var(--muted); font-size:12px; }
+    .chip.active{ background: var(--chipActive); border-color: rgba(122,167,255,0.35); }
+    main{ max-width:980px; margin:0 auto; padding: 12px; }
+    .metaBar{
+      display:flex; justify-content:space-between; align-items:center; gap:10px;
+      color: var(--muted);
+      font-size:12px;
+      padding: 4px 2px 10px;
+    }
+
+    /* 2-column grid on phone by default */
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap:10px;
+      padding-bottom: 90px;
+    }
+    @media (min-width: 780px){
+      .grid{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+    }
+
+    .card{
+      background: var(--panel2);
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      overflow:hidden;
+      position:relative;
+    }
+    .thumb{
+      position:relative;
+      width:100%;
+      aspect-ratio: 9 / 16;
+      background:#07080b;
+    }
+    video{
+      width:100%;
+      height:100%;
+      object-fit: cover;
+      display:block;
+      background:#07080b;
+    }
+    .cardBar{
+      display:flex;
+      gap:6px;
+      align-items:center;
+      justify-content:space-between;
+      padding:8px;
+      border-top:1px solid rgba(32,36,51,0.7);
+    }
+    .tagsLine{
+      display:flex; gap:6px; flex-wrap:wrap;
+      max-width: 100%;
+    }
+    .tagPill{
+      font-size:11px;
+      color: var(--muted);
+      border:1px solid rgba(32,36,51,0.8);
+      background: rgba(17,19,26,0.8);
+      padding:4px 7px;
+      border-radius: 999px;
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .actions{
+      display:flex; gap:6px; flex-shrink:0;
+    }
+    .iconBtn{
+      border:1px solid rgba(32,36,51,0.9);
+      background: rgba(17,19,26,0.9);
+      color: var(--text);
+      border-radius: 10px;
+      padding:7px 8px;
+      font-size:12px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .iconBtn:active{ transform: translateY(1px); }
+    .iconBtn.danger{ border-color: rgba(255,77,77,0.25); color:#ffb3b3; }
+
+    .hint{
+      color: var(--muted);
+      font-size:12px;
+      padding: 6px 2px 12px;
+    }
+
+    .pager{
+      position: sticky;
+      bottom: 0;
+      z-index: 9;
+      background: linear-gradient(0deg, rgba(11,12,16,0.98), rgba(11,12,16,0.86));
+      border-top:1px solid var(--line);
+      backdrop-filter: blur(10px);
+      padding: 10px 12px;
+    }
+    .pagerInner{
+      max-width: 980px;
+      margin: 0 auto;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      font-size:12px;
+      color: var(--muted);
+    }
+    .pagerInner .btn{ padding:9px 10px; }
+
+    /* Fullscreen viewer */
+    .modal{
+      position:fixed;
+      inset:0;
+      background: rgba(0,0,0,0.76);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index: 999;
+      padding: 12px;
+    }
+    .modal.show{ display:flex; }
+    .viewer{
+      width: min(980px, 100%);
+      height: min(92vh, 900px);
+      background: #05060a;
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius: 18px;
+      overflow:hidden;
+      position:relative;
+      display:flex;
+      flex-direction: column;
+    }
+    .viewerTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding: 10px;
+      border-bottom:1px solid rgba(255,255,255,0.08);
+      background: rgba(10,11,16,0.8);
+      color: var(--muted);
+      font-size:12px;
+      gap: 10px;
+    }
+    .viewerVideo{
+      flex: 1;
+      position:relative;
+      background:#000;
+    }
+    .viewerVideo video{
+      width:100%;
+      height:100%;
+      object-fit: contain;
+      background:#000;
+    }
+    .toast{
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 70px;
+      background: rgba(17,19,26,0.95);
+      border:1px solid rgba(255,255,255,0.08);
+      color: var(--text);
+      padding:10px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      display:none;
+      z-index: 1000;
+    }
+    .toast.show{ display:block; }
+    a.link{ color: var(--accent); text-decoration:none; }
+    a.link:hover{ text-decoration:underline; }
+
+    /* hidden file input */
+    #importFile{ display:none; }
+
+    /* --- Drag reorder --- */
+    .dragHandle{
+      position:absolute;
+      top:10px;
+      right:10px;
+      z-index:3;
+      width:34px;
+      height:34px;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,0.10);
+      background: rgba(17,19,26,0.78);
+      color: rgba(233,236,241,0.95);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:16px;
+      line-height:1;
+      cursor:grab;
+      user-select:none;
+      -webkit-user-select:none;
+      touch-action:none;
+      backdrop-filter: blur(10px);
+    }
+    .dragHandle:active{ cursor:grabbing; transform: translateY(1px); }
+
+    .card.dragging{
+      opacity: 0.55;
+      transform: scale(0.98);
+      border-color: rgba(122,167,255,0.45);
+      box-shadow: 0 0 0 2px rgba(122,167,255,0.10) inset;
+    }
+
+    .dragGhost{
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 2000;
+      pointer-events: none;
+      border-radius: var(--radius);
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 18px 60px rgba(0,0,0,0.55);
+      transform: translate3d(0,0,0);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="toprow">
+        <div class="brand">
+          <strong>Grok Video Board</strong>
+          <span>local-only mood board • autoplay loop • tag collections</span>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+          <button class="btn" id="exportBtn">Export</button>
+          <button class="btn" id="importBtn">Import</button>
+          <button class="btn danger" id="wipeBtn" title="Delete everything">Wipe</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="input">
+          <input id="urlInput" type="text" placeholder="Paste Grok Imagine public link (post URL) or direct .mp4/.m3u8"/>
+          <button class="btn primary" id="addBtn">Add</button>
+        </div>
+        <div class="input" style="flex: 1 1 220px;">
+          <input id="tagInput" type="text" placeholder="Tags (comma-separated) e.g. neon, moody, sci-fi"/>
+        </div>
+      </div>
+
+      <div class="hint">
+        Paste Grok post links and I’ll try to resolve them to a direct video URL. Videos play muted + loop. Tap to full view. Drag ≡ to reorder.
+      </div>
+
+      <div class="chips" id="tagChips"></div>
+
+      <input type="file" id="importFile" accept="application/json" />
+    </div>
+  </header>
+
+  <main>
+    <div class="metaBar">
+      <div id="metaLeft"></div>
+      <div id="metaRight"></div>
+    </div>
+    <div class="grid" id="grid"></div>
+  </main>
+
+  <div class="pager">
+    <div class="pagerInner">
+      <button class="btn" id="prevPageBtn">← Prev</button>
+      <div id="pageLabel"></div>
+      <button class="btn" id="nextPageBtn">Next →</button>
+    </div>
+  </div>
+
+  <div class="modal" id="modal">
+    <div class="viewer">
+      <div class="viewerTop">
+        <div id="viewerInfo"></div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+          <button class="btn" id="toggleSoundBtn">Sound: Off</button>
+          <button class="btn" id="closeModalBtn">Close</button>
+        </div>
+      </div>
+      <div class="viewerVideo">
+        <video id="viewerVideo" playsinline controls></video>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const LS_KEY = "grok_video_board_v2";
+  const PAGE_SIZE = 50;
+
+  // CHANGE THIS after you deploy your Worker:
+  const RESOLVER_BASE = "https://nameless-morning-980f.mkhrrs89.workers.dev";
+
+
+  /** @type {{items: Array<{id:string,sourceUrl:string,mediaUrl:string,tags:string[],addedAt:number}>, ui:{activeTag:string|null,page:number}}} */
+  let state = {
+    items: [],
+    ui: { activeTag: null, page: 1 }
+  };
+
+  // Elements
+  const urlInput = document.getElementById("urlInput");
+  const tagInput = document.getElementById("tagInput");
+  const addBtn = document.getElementById("addBtn");
+  const grid = document.getElementById("grid");
+  const tagChips = document.getElementById("tagChips");
+  const metaLeft = document.getElementById("metaLeft");
+  const metaRight = document.getElementById("metaRight");
+  const pageLabel = document.getElementById("pageLabel");
+  const prevPageBtn = document.getElementById("prevPageBtn");
+  const nextPageBtn = document.getElementById("nextPageBtn");
+
+  const exportBtn = document.getElementById("exportBtn");
+  const importBtn = document.getElementById("importBtn");
+  const importFile = document.getElementById("importFile");
+  const wipeBtn = document.getElementById("wipeBtn");
+
+  const modal = document.getElementById("modal");
+  const viewerVideo = document.getElementById("viewerVideo");
+  const viewerInfo = document.getElementById("viewerInfo");
+  const closeModalBtn = document.getElementById("closeModalBtn");
+  const toggleSoundBtn = document.getElementById("toggleSoundBtn");
+
+  const toast = document.getElementById("toast");
+
+  // --- Utilities
+  const now = () => Date.now();
+  const uid = () => Math.random().toString(16).slice(2) + "-" + Math.random().toString(16).slice(2);
+
+  function showToast(msg){
+    toast.textContent = msg;
+    toast.classList.add("show");
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toast.classList.remove("show"), 1800);
+  }
+
+  function save(){
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+  }
+
+  function load(){
+    try{
+      const raw = localStorage.getItem(LS_KEY);
+      if(!raw) return;
+      const parsed = JSON.parse(raw);
+      if(parsed && Array.isArray(parsed.items) && parsed.ui){
+        state = parsed;
+      }
+    }catch(e){
+      console.warn("Load failed:", e);
+    }
+  }
+
+  function parseTags(str){
+    return (str || "")
+      .split(",")
+      .map(s => s.trim())
+      .filter(Boolean)
+      .slice(0, 20);
+  }
+
+  function looksLikeVideoUrl(url){
+    const u = (url || "").toLowerCase();
+    return u.includes(".mp4") || u.includes(".webm") || u.includes(".m3u8");
+  }
+
+  function sanitizeUrl(url){
+    return (url || "").trim();
+  }
+
+  function allTags(){
+    const counts = new Map();
+    for(const it of state.items){
+      for(const t of it.tags){
+        counts.set(t, (counts.get(t) || 0) + 1);
+      }
+    }
+    return Array.from(counts.entries())
+      .sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0]));
+  }
+
+  function filteredItems(){
+    const tag = state.ui.activeTag;
+    if(!tag) return state.items;
+    return state.items.filter(it => it.tags.includes(tag));
+  }
+
+  function pageCount(total){
+    return Math.max(1, Math.ceil(total / PAGE_SIZE));
+  }
+
+  function clampPage(){
+    const total = filteredItems().length;
+    const max = pageCount(total);
+    if(state.ui.page > max) state.ui.page = max;
+    if(state.ui.page < 1) state.ui.page = 1;
+  }
+
+  // --- Grok resolver
+  function isGrokPost(url){
+    try{
+      const u = new URL(url);
+      return u.hostname === "grok.com" && u.pathname.startsWith("/imagine/post/");
+    }catch{
+      return false;
+    }
+  }
+
+  async function resolveGrokPost(url){
+    const endpoint = `${RESOLVER_BASE}/resolve?url=${encodeURIComponent(url)}`;
+    const r = await fetch(endpoint);
+    const j = await r.json();
+    if(!j.ok) throw new Error(j.error || "Resolve failed");
+    return j.mediaUrl;
+  }
+
+  // --- Actions
+  async function addItem(){
+    const url = sanitizeUrl(urlInput.value);
+    if(!url){
+      showToast("Paste a link first 🙃");
+      return;
+    }
+    const tags = parseTags(tagInput.value);
+
+    let mediaUrl = url;
+
+    if (isGrokPost(url)) {
+      showToast("Resolving Grok link…");
+      try {
+        mediaUrl = await resolveGrokPost(url);
+        showToast("Resolved ✅");
+      } catch (e) {
+        console.warn(e);
+        showToast("Couldn’t resolve 😬 — saved as-is");
+      }
+    }
+
+    const item = { id: uid(), sourceUrl: url, mediaUrl, tags, addedAt: now() };
+    state.items.unshift(item);
+    state.ui.page = 1;
+
+    save();
+    urlInput.value = "";
+    render();
+  }
+
+  function deleteItem(id){
+    const idx = state.items.findIndex(it => it.id === id);
+    if(idx >= 0){
+      state.items.splice(idx,1);
+      save();
+      render();
+      showToast("Deleted 🗑️");
+    }
+  }
+
+  function setActiveTag(tag){
+    state.ui.activeTag = tag;
+    state.ui.page = 1;
+    save();
+    render();
+  }
+
+  function prevPage(){
+    state.ui.page--;
+    clampPage();
+    save();
+    render();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function nextPage(){
+    state.ui.page++;
+    clampPage();
+    save();
+    render();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function exportJson(){
+    const data = JSON.stringify(state, null, 2);
+    const blob = new Blob([data], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "grok-video-board.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    showToast("Exported 📦");
+  }
+
+  function importJsonText(text){
+    try{
+      const parsed = JSON.parse(text);
+      if(!parsed || !Array.isArray(parsed.items)) throw new Error("Invalid file");
+      // Merge by sourceUrl OR mediaUrl
+      const seen = new Set(state.items.map(it => (it.sourceUrl || "") + "||" + (it.mediaUrl || "")));
+      for(const it of parsed.items){
+        const sourceUrl = sanitizeUrl(it.sourceUrl || it.url || "");
+        const mediaUrl = sanitizeUrl(it.mediaUrl || it.url || sourceUrl);
+        if(!sourceUrl) continue;
+
+        const key = sourceUrl + "||" + mediaUrl;
+        if(seen.has(key)) continue;
+
+        state.items.push({
+          id: uid(),
+          sourceUrl,
+          mediaUrl,
+          tags: Array.isArray(it.tags) ? it.tags.map(t=>String(t).trim()).filter(Boolean) : [],
+          addedAt: typeof it.addedAt === "number" ? it.addedAt : now()
+        });
+        seen.add(key);
+      }
+      clampPage();
+      save();
+      render();
+      showToast("Imported ✅");
+    }catch(e){
+      console.error(e);
+      showToast("Import failed 😬 (bad JSON?)");
+    }
+  }
+
+  // IntersectionObserver: pause off-screen vids for smoother scrolling
+  const io = new IntersectionObserver((entries) => {
+    for(const entry of entries){
+      const v = entry.target;
+      if(!(v instanceof HTMLVideoElement)) continue;
+      if(entry.isIntersecting){
+        v.play().catch(()=>{});
+      }else{
+        v.pause();
+      }
+    }
+  }, { threshold: 0.25 });
+
+  // Helper: swap underlying data based on current filtered ordering
+  function swapItemsInMasterByFilteredIds(aId, bId){
+    const items = filteredItems();
+    const aIdxF = items.findIndex(it => it.id === aId);
+    const bIdxF = items.findIndex(it => it.id === bId);
+    if(aIdxF === -1 || bIdxF === -1) return;
+
+    const aMaster = state.items.findIndex(it => it.id === aId);
+    const bMaster = state.items.findIndex(it => it.id === bId);
+    if(aMaster === -1 || bMaster === -1) return;
+
+    const tmp = state.items[aMaster];
+    state.items[aMaster] = state.items[bMaster];
+    state.items[bMaster] = tmp;
+  }
+
+  // --- Drag reorder (mobile buttery)
+  let drag = {
+    active: false,
+    id: null,
+    pointerId: null,
+    startX: 0,
+    startY: 0,
+    longPressTimer: null,
+    ghost: null,
+    offsetX: 0,
+    offsetY: 0,
+    saveTimer: null
+  };
+
+  function scheduleSave(){
+    clearTimeout(drag.saveTimer);
+    drag.saveTimer = setTimeout(() => save(), 200);
+  }
+
+  function makeGhostFromCard(card, clientX, clientY){
+    const rect = card.getBoundingClientRect();
+    const clone = card.cloneNode(true);
+
+    // Make clone lighter: remove videos
+    clone.querySelectorAll("video").forEach(v => {
+      try { v.pause(); } catch(_){}
+      v.removeAttribute("src");
+    });
+
+    const ghost = document.createElement("div");
+    ghost.className = "dragGhost";
+    ghost.style.width = rect.width + "px";
+    ghost.style.height = rect.height + "px";
+    ghost.appendChild(clone);
+
+    document.body.appendChild(ghost);
+
+    drag.offsetX = clientX - rect.left;
+    drag.offsetY = clientY - rect.top;
+
+    positionGhost(clientX, clientY);
+    return ghost;
+  }
+
+  function positionGhost(clientX, clientY){
+    if(!drag.ghost) return;
+    const left = clientX - drag.offsetX;
+    const top  = clientY - drag.offsetY;
+    drag.ghost.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+  }
+
+  function startDrag(card, id, pointerId, clientX, clientY){
+    drag.active = true;
+    drag.id = id;
+    drag.pointerId = pointerId;
+
+    card.classList.add("dragging");
+    const v = card.querySelector("video");
+    if(v) v.pause();
+
+    drag.ghost = makeGhostFromCard(card, clientX, clientY);
+    if(navigator.vibrate) navigator.vibrate(10);
+  }
+
+  function endDrag(){
+    if(!drag.active) return;
+
+    const card = grid.querySelector(`.card[data-id="${CSS.escape(drag.id)}"]`);
+    if(card){
+      card.classList.remove("dragging");
+      const v = card.querySelector("video");
+      if(v) v.play().catch(()=>{});
+    }
+
+    if(drag.ghost){
+      drag.ghost.remove();
+      drag.ghost = null;
+    }
+
+    drag.active = false;
+    drag.id = null;
+    drag.pointerId = null;
+
+    scheduleSave();
+  }
+
+  function cardFromPoint(x, y){
+    const el = document.elementFromPoint(x, y);
+    if(!el) return null;
+    return el.closest(".card");
+  }
+
+  function wireDragForCard(card){
+    const handle = card.querySelector(".dragHandle");
+    if(!handle) return;
+
+    handle.addEventListener("click", (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+    });
+
+    handle.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const id = card.getAttribute("data-id");
+      drag.startX = e.clientX;
+      drag.startY = e.clientY;
+
+      clearTimeout(drag.longPressTimer);
+      drag.longPressTimer = setTimeout(() => {
+        try { handle.setPointerCapture(e.pointerId); } catch(_){}
+        startDrag(card, id, e.pointerId, e.clientX, e.clientY);
+      }, 150);
+    });
+
+    handle.addEventListener("pointermove", (e) => {
+      const dx = Math.abs(e.clientX - drag.startX);
+      const dy = Math.abs(e.clientY - drag.startY);
+
+      if(!drag.active && (dx > 8 || dy > 8)){
+        clearTimeout(drag.longPressTimer);
+      }
+
+      if(!drag.active) return;
+      if(drag.pointerId !== e.pointerId) return;
+
+      positionGhost(e.clientX, e.clientY);
+
+      const over = cardFromPoint(e.clientX, e.clientY);
+      if(!over) return;
+
+      const overId = over.getAttribute("data-id");
+      if(!overId || overId === drag.id) return;
+
+      const draggingCard = grid.querySelector(`.card[data-id="${CSS.escape(drag.id)}"]`);
+      if(!draggingCard) return;
+
+      const cards = Array.from(grid.querySelectorAll(".card"));
+      const aIndex = cards.indexOf(draggingCard);
+      const bIndex = cards.indexOf(over);
+      if(aIndex === -1 || bIndex === -1) return;
+
+      if(aIndex < bIndex){
+        grid.insertBefore(draggingCard, over.nextSibling);
+      }else{
+        grid.insertBefore(draggingCard, over);
+      }
+
+      swapItemsInMasterByFilteredIds(drag.id, overId);
+      scheduleSave();
+    });
+
+    function cancelOrEnd(e){
+      clearTimeout(drag.longPressTimer);
+      if(drag.active && drag.pointerId === e.pointerId){
+        endDrag();
+      }
+    }
+
+    handle.addEventListener("pointerup", cancelOrEnd);
+    handle.addEventListener("pointercancel", cancelOrEnd);
+  }
+
+  // --- Viewer modal
+  let currentViewerId = null;
+
+  function openViewer(item){
+    currentViewerId = item.id;
+    const openUrl = item.sourceUrl || item.mediaUrl;
+    const tagsText = item.tags.length ? item.tags.map(t=>`#${escapeHtml(t)}`).join(" ") : "no tags";
+
+    viewerInfo.innerHTML = `
+      <span>${tagsText}</span>
+      <span style="margin-left:8px;">•</span>
+      <a class="link" href="${escapeAttr(openUrl)}" target="_blank" rel="noopener">Open source</a>
+    `;
+
+    viewerVideo.src = item.mediaUrl || item.sourceUrl;
+    viewerVideo.loop = true;
+    viewerVideo.muted = true;
+    toggleSoundBtn.textContent = "Sound: Off";
+    modal.classList.add("show");
+    viewerVideo.play().catch(()=>{});
+  }
+
+  function closeViewer(){
+    modal.classList.remove("show");
+    viewerVideo.pause();
+    viewerVideo.removeAttribute("src");
+    viewerVideo.load();
+    currentViewerId = null;
+  }
+
+  function toggleSound(){
+    viewerVideo.muted = !viewerVideo.muted;
+    toggleSoundBtn.textContent = viewerVideo.muted ? "Sound: Off" : "Sound: On";
+    if(!viewerVideo.paused) viewerVideo.play().catch(()=>{});
+  }
+
+  // --- Rendering helpers
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, m => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[m]));
+  }
+  function escapeAttr(str){
+    return String(str).replace(/"/g, "&quot;");
+  }
+
+  function renderTags(){
+    const tagList = allTags();
+
+    const chips = [];
+    chips.push(`
+      <div class="chip ${state.ui.activeTag === null ? "active":""}" data-tag="">
+        All <small>(${state.items.length})</small>
+      </div>
+    `);
+
+    for(const [tag,count] of tagList){
+      const active = state.ui.activeTag === tag ? "active" : "";
+      chips.push(`
+        <div class="chip ${active}" data-tag="${escapeAttr(tag)}">
+          #${escapeHtml(tag)} <small>(${count})</small>
+        </div>
+      `);
+    }
+    tagChips.innerHTML = chips.join("");
+
+    tagChips.querySelectorAll(".chip").forEach(ch => {
+      ch.addEventListener("click", () => {
+        const t = ch.getAttribute("data-tag");
+        setActiveTag(t ? t : null);
+      });
+    });
+  }
+
+  function renderGrid(){
+    // cleanup observers
+    grid.querySelectorAll("video").forEach(v => io.unobserve(v));
+
+    const items = filteredItems();
+    clampPage();
+
+    const total = items.length;
+    const maxPages = pageCount(total);
+    const page = state.ui.page;
+
+    const start = (page - 1) * PAGE_SIZE;
+    const end = Math.min(total, start + PAGE_SIZE);
+    const slice = items.slice(start, end);
+
+    metaLeft.textContent = state.ui.activeTag ? `Showing #${state.ui.activeTag}` : "Showing all videos";
+    metaRight.textContent = `${total} total • page ${page} / ${maxPages}`;
+
+    pageLabel.textContent = `Page ${page} of ${maxPages}`;
+    prevPageBtn.disabled = page <= 1;
+    nextPageBtn.disabled = page >= maxPages;
+    prevPageBtn.style.opacity = prevPageBtn.disabled ? 0.45 : 1;
+    nextPageBtn.style.opacity = nextPageBtn.disabled ? 0.45 : 1;
+
+    if(slice.length === 0){
+      grid.innerHTML = `
+        <div style="grid-column: 1 / -1; padding: 18px; color: var(--muted); border:1px dashed rgba(255,255,255,0.12); border-radius: 16px;">
+          Nothing here yet. Paste a link up top and hit <b>Add</b>.
+        </div>
+      `;
+      return;
+    }
+
+    grid.innerHTML = slice.map(it => {
+      const tagPills = it.tags.slice(0,6).map(t => `<span class="tagPill">#${escapeHtml(t)}</span>`).join("");
+      const more = it.tags.length > 6 ? `<span class="tagPill">+${it.tags.length-6}</span>` : "";
+      const warn = looksLikeVideoUrl(it.mediaUrl) ? "" : `<span class="tagPill" title="May not be a direct video URL">link?</span>`;
+
+      const src = it.mediaUrl || it.sourceUrl;
+
+      return `
+        <div class="card" data-id="${it.id}">
+          <div class="thumb">
+            <div class="dragHandle" title="Press & hold, then drag">≡</div>
+            <video
+              preload="metadata"
+              playsinline
+              muted
+              loop
+              autoplay
+              webkit-playsinline
+              src="${escapeAttr(src)}"
+            ></video>
+          </div>
+          <div class="cardBar">
+            <div class="tagsLine">${warn}${tagPills}${more}</div>
+            <div class="actions">
+              <button class="iconBtn danger" data-act="del" title="Delete">✕</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    // Wire events
+    grid.querySelectorAll(".card").forEach(card => {
+      const id = card.getAttribute("data-id");
+      const item = state.items.find(x => x.id === id);
+      const vid = card.querySelector("video");
+
+      io.observe(vid);
+
+      // Tap video to open viewer (but not drag handle)
+      vid.addEventListener("click", (e) => {
+        e.preventDefault();
+        if(item) openViewer(item);
+      });
+
+      card.querySelectorAll("button[data-act]").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const act = btn.getAttribute("data-act");
+          if(act === "del") deleteItem(id);
+        });
+      });
+
+      vid.addEventListener("error", () => {
+        vid.pause();
+      });
+
+      wireDragForCard(card);
+    });
+  }
+
+  function render(){
+    renderTags();
+    renderGrid();
+  }
+
+  // --- Event listeners
+  addBtn.addEventListener("click", addItem);
+  urlInput.addEventListener("keydown", (e) => {
+    if(e.key === "Enter") addItem();
+  });
+
+  prevPageBtn.addEventListener("click", () => { if(!prevPageBtn.disabled) prevPage(); });
+  nextPageBtn.addEventListener("click", () => { if(!nextPageBtn.disabled) nextPage(); });
+
+  exportBtn.addEventListener("click", exportJson);
+
+  importBtn.addEventListener("click", () => importFile.click());
+  importFile.addEventListener("change", async () => {
+    const file = importFile.files && importFile.files[0];
+    if(!file) return;
+    const text = await file.text();
+    importJsonText(text);
+    importFile.value = "";
+  });
+
+  wipeBtn.addEventListener("click", () => {
+    const ok = confirm("Wipe EVERYTHING from this device? (cannot undo)");
+    if(!ok) return;
+    state = { items: [], ui: { activeTag: null, page: 1 } };
+    save();
+    render();
+    showToast("Wiped ✅");
+  });
+
+  closeModalBtn.addEventListener("click", closeViewer);
+  toggleSoundBtn.addEventListener("click", toggleSound);
+  modal.addEventListener("click", (e) => {
+    if(e.target === modal) closeViewer();
+  });
+  window.addEventListener("keydown", (e) => {
+    if(e.key === "Escape") closeViewer();
+  });
+
+  // --- Boot
+  load();
+
+  // migrate super-old {url} shape if you ever used v1
+  state.items = (state.items || []).map(it => {
+    if(it && it.url && !it.sourceUrl && !it.mediaUrl){
+      return { ...it, sourceUrl: it.url, mediaUrl: it.url };
+    }
+    return it;
+  });
+
+  if(typeof state.ui?.page !== "number") state.ui = { activeTag: null, page: 1 };
+  if(!Array.isArray(state.items)) state.items = [];
+  clampPage();
+  save();
+  render();
+})();
+</script>
+</body>
+</html>
