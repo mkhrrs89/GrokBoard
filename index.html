@@ -345,6 +345,12 @@
       text-overflow: ellipsis;
     }
 
+    .controlsFooter{
+      display:none;
+      justify-content:flex-end;
+      padding: 10px 0 12px;
+    }
+
     .fab{
       position: fixed;
       right: 14px;
@@ -370,6 +376,8 @@
     /* Mobile behavior */
     @media (max-width: 640px){
       .collapseBar{ display:flex; }
+      body:not(.controls-collapsed) .collapseBar{ display:none; }
+      body:not(.controls-collapsed) .controlsFooter{ display:flex; }
       body.controls-collapsed #controlsPanel{
         display:none;
       }
@@ -435,6 +443,10 @@
         <div class="chips" id="tagChips"></div>
 
         <input type="file" id="importFile" accept="application/json" />
+
+        <div class="controlsFooter">
+          <button class="btn" id="hideControlsBtn">Hide controls</button>
+        </div>
       </div>
     </div>
   </header>
@@ -516,6 +528,7 @@
   const controlsPanel = document.getElementById("controlsPanel");
   const toggleControlsBtn = document.getElementById("toggleControlsBtn");
   const toggleControlsFab = document.getElementById("toggleControlsFab");
+  const hideControlsBtn = document.getElementById("hideControlsBtn");
 
   // --- Utilities
   const now = () => Date.now();
@@ -1211,6 +1224,7 @@
   });
   toggleControlsBtn.addEventListener("click", toggleControls);
   toggleControlsFab.addEventListener("click", toggleControls);
+  hideControlsBtn.addEventListener("click", toggleControls);
   window.addEventListener("resize", applyControlsCollapse);
 
   // --- Boot
