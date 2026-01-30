@@ -441,26 +441,6 @@
       }
     }
 
-    /* --- Compact inputs on mobile --- */
-@media (max-width: 640px){
-  .input{
-    padding: 6px 8px;      /* was 10px */
-    border-radius: 14px;   /* slightly tighter */
-    gap: 8px;
-  }
-
-  input[type="text"]{
-    font-size: 13px;       /* was 14px */
-    line-height: 1.15;
-    padding: 6px 0;        /* gives a controlled height */
-    min-height: 30px;      /* hard cap-ish */
-  }
-
-  .btn{
-    padding: 8px 10px;     /* keep button from being huge */
-    font-size: 13px;
-  }
-}
 
 /* ===== Ultra-compact density mode (mobile) ===== */
 @media (max-width: 640px){
@@ -523,8 +503,8 @@
           <strong>Grok Video Board</strong>
         </div>
         <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
-          <button class="btn compact" id="exportBtn">Export</button>
-          <button class="btn" id="importBtn">Import</button>
+          <button class="btn compact" id="exportBtn">Exp</button>
+          <button class="btn compact" id="importBtn">Imp</button>
           <button class="btn danger" id="wipeBtn" title="Delete everything">Wipe</button>
         </div>
       </div>
@@ -1385,6 +1365,7 @@
 </script>
 </body>
 </html>
+
 
 
 
