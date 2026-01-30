@@ -764,11 +764,19 @@
     }
   }
 
+  function configureAutoplayVideo(video){
+    video.muted = true;
+    video.loop = true;
+    video.autoplay = true;
+    video.playsInline = true;
+  }
+
   // IntersectionObserver: pause off-screen vids for smoother scrolling
   const io = new IntersectionObserver((entries) => {
     for(const entry of entries){
       const v = entry.target;
       if(!(v instanceof HTMLVideoElement)) continue;
+      configureAutoplayVideo(v);
       if(entry.isIntersecting){
         v.play().catch(()=>{});
       }else{
@@ -972,8 +980,7 @@
     `;
 
     viewerVideo.src = item.mediaUrl || item.sourceUrl;
-    viewerVideo.loop = true;
-    viewerVideo.muted = true;
+    configureAutoplayVideo(viewerVideo);
     toggleSoundBtn.textContent = "Sound: Off";
     modal.classList.add("show");
     viewerVideo.play().catch(()=>{});
@@ -1102,7 +1109,9 @@
       const item = state.items.find(x => x.id === id);
       const vid = card.querySelector("video");
 
+      configureAutoplayVideo(vid);
       io.observe(vid);
+      vid.play().catch(()=>{});
 
       // Tap video to open viewer (but not drag handle)
       vid.addEventListener("click", (e) => {
