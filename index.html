@@ -135,11 +135,48 @@
       overflow:hidden;
       position:relative;
     }
+    .card.selected{
+      border-color: rgba(122,167,255,0.55);
+      box-shadow: 0 0 0 2px rgba(122,167,255,0.15) inset;
+    }
     .thumb{
       position:relative;
       width:100%;
       aspect-ratio: 9 / 16;
       background:#07080b;
+    }
+    .selectBox{
+      position:absolute;
+      top:10px;
+      left:10px;
+      z-index:4;
+      width:20px;
+      height:20px;
+      border-radius:6px;
+      border:1px solid rgba(255,255,255,0.35);
+      background: rgba(17,19,26,0.75);
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+      user-select:none;
+    }
+    .selectBox input{
+      position:absolute;
+      opacity:0;
+      pointer-events:none;
+    }
+    .selectBox span{
+      width:12px;
+      height:12px;
+      border-radius:4px;
+      border:1px solid rgba(255,255,255,0.6);
+      background: transparent;
+      display:block;
+    }
+    .selectBox input:checked + span{
+      background: var(--accent);
+      border-color: rgba(255,255,255,0.9);
+      box-shadow: 0 0 0 2px rgba(0,0,0,0.35) inset;
     }
     video{
       width:100%;
@@ -489,10 +526,10 @@
   const RESOLVER_BASE = "https://nameless-morning-980f.mkhrrs89.workers.dev";
 
 
-  /** @type {{items: Array<{id:string,sourceUrl:string,mediaUrl:string,tags:string[],addedAt:number}>, ui:{activeTag:string|null,page:number}}} */
+  /** @type {{items: Array<{id:string,sourceUrl:string,mediaUrl:string,tags:string[],addedAt:number}>, ui:{activeTag:string|null,page:number,selected:string[]}}} */
   let state = {
     items: [],
-    ui: { activeTag: null, page: 1 }
+    ui: { activeTag: null, page: 1, selected: [] }
   };
 
   // Elements
@@ -706,6 +743,19 @@
   function setActiveTag(tag){
     state.ui.activeTag = tag;
     state.ui.page = 1;
+    save();
+    render();
+  }
+
+  function toggleSelection(id, checked){
+    if(!Array.isArray(state.ui.selected)) state.ui.selected = [];
+    const selected = new Set(state.ui.selected);
+    if(checked){
+      selected.add(id);
+    }else{
+      selected.delete(id);
+    }
+    state.ui.selected = Array.from(selected);
     save();
     render();
   }
@@ -1084,7 +1134,8 @@
     const slice = items.slice(start, end);
 
     metaLeft.textContent = state.ui.activeTag ? `Showing #${state.ui.activeTag}` : "Showing all videos";
-    metaRight.textContent = `${total} total • page ${page} / ${maxPages}`;
+    const selectedCount = Array.isArray(state.ui.selected) ? state.ui.selected.length : 0;
+    metaRight.textContent = `${total} total • page ${page} / ${maxPages}${selectedCount ? ` • ${selectedCount} selected` : ""}`;
 
     pageLabel.textContent = `Page ${page} of ${maxPages}`;
     prevPageBtn.disabled = page <= 1;
@@ -1101,16 +1152,23 @@
       return;
     }
 
+    const selectedSet = new Set(Array.isArray(state.ui.selected) ? state.ui.selected : []);
+
     grid.innerHTML = slice.map(it => {
       const tagPills = it.tags.slice(0,6).map(t => `<span class="tagPill">#${escapeHtml(t)}</span>`).join("");
       const more = it.tags.length > 6 ? `<span class="tagPill">+${it.tags.length-6}</span>` : "";
       const warn = looksLikeVideoUrl(it.mediaUrl) ? "" : `<span class="tagPill" title="May not be a direct video URL">link?</span>`;
 
       const src = it.mediaUrl || it.sourceUrl;
+      const selected = selectedSet.has(it.id);
 
       return `
-        <div class="card" data-id="${it.id}">
+        <div class="card ${selected ? "selected" : ""}" data-id="${it.id}">
           <div class="thumb">
+            <label class="selectBox" title="Select video">
+              <input type="checkbox" data-act="select" ${selected ? "checked" : ""} />
+              <span></span>
+            </label>
             <div class="dragHandle" title="Press & hold, then drag">≡</div>
             <video
               preload="metadata"
@@ -1166,6 +1224,17 @@
         });
       });
 
+      const selectInput = card.querySelector("input[data-act=\"select\"]");
+      if(selectInput){
+        selectInput.addEventListener("click", (e) => {
+          e.stopPropagation();
+        });
+        selectInput.addEventListener("change", (e) => {
+          e.stopPropagation();
+          toggleSelection(id, selectInput.checked);
+        });
+      }
+
       vid.addEventListener("error", () => {
         pauseVideo(vid);
       });
@@ -1202,7 +1271,7 @@
   wipeBtn.addEventListener("click", () => {
     const ok = confirm("Wipe EVERYTHING from this device? (cannot undo)");
     if(!ok) return;
-    state = { items: [], ui: { activeTag: null, page: 1 } };
+    state = { items: [], ui: { activeTag: null, page: 1, selected: [] } };
     save();
     render();
     showToast("Wiped ✅");
@@ -1232,7 +1301,8 @@
     return it;
   });
 
-  if(typeof state.ui?.page !== "number") state.ui = { activeTag: null, page: 1 };
+  if(typeof state.ui?.page !== "number") state.ui = { activeTag: null, page: 1, selected: [] };
+  if(!Array.isArray(state.ui.selected)) state.ui.selected = [];
   if(!Array.isArray(state.items)) state.items = [];
   clampPage();
   save();
