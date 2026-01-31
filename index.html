@@ -65,6 +65,10 @@
       padding:7px 10px;
       font-size:12px;
     }
+    .btn:disabled{
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
     .row{
       display:flex; gap:10px; flex-wrap:wrap;
       padding-bottom: 10px;
@@ -569,6 +573,7 @@
           </div>
           <div class="input" style="flex: 1 1 220px;">
             <input id="tagInput" type="text" placeholder="Tags (comma-separated) e.g. neon, moody, sci-fi"/>
+            <button class="btn compact" id="applyTagBtn" type="button">Tag selected</button>
           </div>
         </div>
 
@@ -638,6 +643,7 @@
   const urlInput = document.getElementById("urlInput");
   const tagInput = document.getElementById("tagInput");
   const addBtn = document.getElementById("addBtn");
+  const applyTagBtn = document.getElementById("applyTagBtn");
   const grid = document.getElementById("grid");
   const tagChips = document.getElementById("tagChips");
   const metaLeft = document.getElementById("metaLeft");
@@ -844,6 +850,35 @@
     save();
     render();
     showToast("Tags updated ✨");
+  }
+
+  function applyTagsToSelected(){
+    const selectedIds = Array.isArray(state.ui.selected) ? state.ui.selected : [];
+    if(selectedIds.length === 0){
+      showToast("Select videos first");
+      return;
+    }
+    const tagsToAdd = parseTags(tagInput.value);
+    if(tagsToAdd.length === 0){
+      showToast("Add a tag to apply");
+      return;
+    }
+
+    let updatedCount = 0;
+    for(const id of selectedIds){
+      const item = state.items.find(it => it.id === id);
+      if(!item) continue;
+      const merged = new Set(item.tags);
+      tagsToAdd.forEach(tag => merged.add(tag));
+      item.tags = Array.from(merged);
+      updatedCount += 1;
+    }
+
+    if(updatedCount > 0){
+      save();
+      render();
+      showToast(`Added tags to ${updatedCount} video${updatedCount === 1 ? "" : "s"}`);
+    }
   }
 
   function setActiveTag(tag){
@@ -1242,6 +1277,9 @@
     metaLeft.textContent = state.ui.activeTag ? `Showing #${state.ui.activeTag}` : "Showing all videos";
     const selectedCount = Array.isArray(state.ui.selected) ? state.ui.selected.length : 0;
     metaRight.textContent = `${total} total • page ${page} / ${maxPages}${selectedCount ? ` • ${selectedCount} selected` : ""}`;
+    if(applyTagBtn){
+      applyTagBtn.disabled = selectedCount === 0;
+    }
 
     pageLabel.textContent = `Page ${page} of ${maxPages}`;
     prevPageBtn.disabled = page <= 1;
@@ -1356,6 +1394,9 @@
 
   // --- Event listeners
   addBtn.addEventListener("click", addItem);
+  if(applyTagBtn){
+    applyTagBtn.addEventListener("click", applyTagsToSelected);
+  }
   urlInput.addEventListener("keydown", (e) => {
     if(e.key === "Enter") addItem();
   });
