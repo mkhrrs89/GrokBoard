@@ -834,6 +834,11 @@
   }
 
   function deleteItem(id){
+    const confirmDelete = confirm("Delete this video? This cannot be undone.");
+    if(!confirmDelete){
+      showToast("Delete canceled");
+      return;
+    }
     const idx = state.items.findIndex(it => it.id === id);
     if(idx >= 0){
       state.items.splice(idx,1);
