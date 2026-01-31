@@ -891,6 +891,7 @@
     }
 
     if(updatedCount > 0){
+      state.ui.selected = [];
       save();
       render();
       showToast(`Added tags to ${updatedCount} video${updatedCount === 1 ? "" : "s"}`);
