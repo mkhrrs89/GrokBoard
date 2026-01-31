@@ -143,6 +143,17 @@
       border-color: rgba(122,167,255,0.55);
       box-shadow: 0 0 0 2px rgba(122,167,255,0.15) inset;
     }
+    .card.checked::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      border:1px solid rgba(122,167,255,0.35);
+      border-radius: var(--radius);
+      pointer-events:none;
+    }
+    .card.checked video{
+      filter: brightness(0.92);
+    }
     .thumb{
       position:relative;
       width:100%;
@@ -903,7 +914,7 @@
     }
     state.ui.selected = Array.from(selected);
     save();
-    render();
+    updateSelectionSummary();
   }
 
   function prevPage(){
@@ -1264,6 +1275,17 @@
     });
   }
 
+  function updateSelectionSummary(total, maxPages, page){
+    const selectedCount = Array.isArray(state.ui.selected) ? state.ui.selected.length : 0;
+    const totalCount = typeof total === "number" ? total : filteredItems().length;
+    const maxPageCount = typeof maxPages === "number" ? maxPages : pageCount(totalCount);
+    const currentPage = typeof page === "number" ? page : state.ui.page;
+    metaRight.textContent = `${totalCount} total • page ${currentPage} / ${maxPageCount}${selectedCount ? ` • ${selectedCount} selected` : ""}`;
+    if(applyTagBtn){
+      applyTagBtn.disabled = selectedCount === 0;
+    }
+  }
+
   function renderGrid(){
     // cleanup observers
     grid.querySelectorAll("video").forEach(v => io.unobserve(v));
@@ -1280,11 +1302,7 @@
     const slice = items.slice(start, end);
 
     metaLeft.textContent = state.ui.activeTag ? `Showing #${state.ui.activeTag}` : "Showing all videos";
-    const selectedCount = Array.isArray(state.ui.selected) ? state.ui.selected.length : 0;
-    metaRight.textContent = `${total} total • page ${page} / ${maxPages}${selectedCount ? ` • ${selectedCount} selected` : ""}`;
-    if(applyTagBtn){
-      applyTagBtn.disabled = selectedCount === 0;
-    }
+    updateSelectionSummary(total, maxPages, page);
 
     pageLabel.textContent = `Page ${page} of ${maxPages}`;
     prevPageBtn.disabled = page <= 1;
@@ -1312,7 +1330,7 @@
       const selected = selectedSet.has(it.id);
 
       return `
-        <div class="card ${selected ? "selected" : ""}" data-id="${it.id}">
+        <div class="card ${selected ? "selected checked" : ""}" data-id="${it.id}">
           <div class="thumb">
             <label class="selectBox" title="Select video">
               <input type="checkbox" data-act="select" ${selected ? "checked" : ""} />
@@ -1380,7 +1398,10 @@
         });
         selectInput.addEventListener("change", (e) => {
           e.stopPropagation();
-          toggleSelection(id, selectInput.checked);
+          const checked = selectInput.checked;
+          toggleSelection(id, checked);
+          card.classList.toggle("checked", checked);
+          card.classList.toggle("selected", checked);
         });
       }
 
