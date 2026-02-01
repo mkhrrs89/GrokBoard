@@ -16,6 +16,7 @@
       --chipActive:#232845;
       --danger:#ff4d4d;
       --accent:#7aa7ff;
+      --teal:#1ba39c;
       --radius:16px;
     }
     *{ box-sizing:border-box; }
@@ -119,6 +120,28 @@
       color: var(--muted);
       font-size:12px;
       padding: 4px 2px 10px;
+    }
+    .metaLeftGroup{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .todayScore{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(27,163,156,0.4);
+      background: rgba(12,60,57,0.5);
+      color: #d7fffb;
+      font-weight:600;
+      letter-spacing:0.2px;
+    }
+    .todayScore span.label{
+      color: rgba(215,255,251,0.7);
+      font-weight:500;
     }
 
     /* 2-column grid on phone by default */
@@ -425,6 +448,30 @@
     }
     .fab:active{ transform: translateY(1px); }
 
+    .scoreIsland{
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 1001;
+      display:none;
+      align-items:center;
+      gap:6px;
+      padding:9px 12px;
+      border-radius: 999px;
+      border:1px solid rgba(27,163,156,0.5);
+      background: rgba(10,53,50,0.88);
+      color:#d7fffb;
+      font-size:13px;
+      font-weight:600;
+      letter-spacing:0.2px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+    .scoreIsland span.label{
+      color: rgba(215,255,251,0.7);
+      font-weight:500;
+    }
+
     /* Mobile behavior */
     @media (max-width: 640px){
       .collapseBar{ display:flex; }
@@ -434,6 +481,9 @@
         display:none;
       }
       body.controls-collapsed .fab{
+        display:flex;
+      }
+      .scoreIsland{
         display:flex;
       }
       #wipeBtn{ display:none; }
@@ -603,7 +653,13 @@
 
   <main>
     <div class="metaBar">
-      <div id="metaLeft"></div>
+      <div class="metaLeftGroup">
+        <div id="metaLeft"></div>
+        <div class="todayScore" id="todayScore" data-today-score>
+          <span class="label">Today</span>
+          <span class="value" id="todayScoreValue">0</span>
+        </div>
+      </div>
       <div id="metaRight"></div>
     </div>
     <div class="grid" id="grid"></div>
@@ -634,6 +690,10 @@
 
   <div class="toast" id="toast"></div>
   <button class="fab" id="toggleControlsFab" aria-label="Show controls">＋</button>
+  <div class="scoreIsland" id="scoreIsland" aria-live="polite">
+    <span class="label">Today</span>
+    <span class="value" id="scoreIslandValue">0</span>
+  </div>
 
 <script>
 (() => {
@@ -660,6 +720,8 @@
   const tagChips = document.getElementById("tagChips");
   const metaLeft = document.getElementById("metaLeft");
   const metaRight = document.getElementById("metaRight");
+  const todayScoreValue = document.getElementById("todayScoreValue");
+  const scoreIslandValue = document.getElementById("scoreIslandValue");
   const pageLabel = document.getElementById("pageLabel");
   const prevPageBtn = document.getElementById("prevPageBtn");
   const nextPageBtn = document.getElementById("nextPageBtn");
@@ -1298,6 +1360,12 @@
     const maxPageCount = typeof maxPages === "number" ? maxPages : pageCount(totalCount);
     const currentPage = typeof page === "number" ? page : state.ui.page;
     metaRight.textContent = `${totalCount} total • page ${currentPage} / ${maxPageCount}${selectedCount ? ` • ${selectedCount} selected` : ""}`;
+    if(todayScoreValue){
+      todayScoreValue.textContent = totalCount;
+    }
+    if(scoreIslandValue){
+      scoreIslandValue.textContent = todayScoreValue ? todayScoreValue.textContent : totalCount;
+    }
     if(applyTagBtn){
       applyTagBtn.disabled = selectedCount === 0;
     }
