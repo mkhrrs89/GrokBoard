@@ -590,6 +590,7 @@
 
 <div class="chipsRow">
   <div class="chips" id="tagChips"></div>
+  <button class="btn" id="shuffleBtn" title="Randomize the video order">Shuffle</button>
   <button class="btn" id="hideControlsBtn">Hide controls</button>
 </div>
 
@@ -679,6 +680,7 @@
   const toggleControlsBtn = document.getElementById("toggleControlsBtn");
   const toggleControlsFab = document.getElementById("toggleControlsFab");
   const hideControlsBtn = document.getElementById("hideControlsBtn");
+  const shuffleBtn = document.getElementById("shuffleBtn");
 
   // --- Utilities
   const now = () => Date.now();
@@ -903,6 +905,20 @@
     state.ui.page = 1;
     save();
     render();
+  }
+
+  function shuffleItems(){
+    if(state.items.length < 2){
+      showToast("Not enough videos to shuffle");
+      return;
+    }
+    for(let i = state.items.length - 1; i > 0; i -= 1){
+      const j = Math.floor(Math.random() * (i + 1));
+      [state.items[i], state.items[j]] = [state.items[j], state.items[i]];
+    }
+    save();
+    render();
+    showToast("Shuffled 🎲");
   }
 
   function toggleSelection(id, checked){
@@ -1298,6 +1314,10 @@
     const maxPages = pageCount(total);
     const page = state.ui.page;
 
+    if(shuffleBtn){
+      shuffleBtn.disabled = total < 2;
+    }
+
     const start = (page - 1) * PAGE_SIZE;
     const end = Math.min(total, start + PAGE_SIZE);
     const slice = items.slice(start, end);
@@ -1462,6 +1482,9 @@
   toggleControlsBtn.addEventListener("click", toggleControls);
   toggleControlsFab.addEventListener("click", toggleControls);
   hideControlsBtn.addEventListener("click", toggleControls);
+  if(shuffleBtn){
+    shuffleBtn.addEventListener("click", shuffleItems);
+  }
   window.addEventListener("resize", applyControlsCollapse);
 
   // --- Boot
