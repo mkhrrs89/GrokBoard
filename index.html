@@ -621,13 +621,6 @@
       padding: 8px 0 0;
     }
 
-    @media (max-width: 640px){
-  header .row{
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-}
 
     @media (max-width: 640px){
   .input{
@@ -654,7 +647,55 @@
   }
 }
 
-    
+    /* --- Mobile: URL gets most space, Tags compact, Sort full-width --- */
+@media (max-width: 640px){
+  header #controlsPanel .row{
+    display:flex;
+    flex-wrap:wrap;
+    gap: 8px;
+  }
+
+  /* URL + Add button (big) */
+  header #controlsPanel .row .input:nth-child(1){
+    flex: 1 1 72%;
+    min-width: 0;
+  }
+
+  /* Tags (smaller) */
+  header #controlsPanel .row .input:nth-child(2){
+    flex: 1 1 28%;
+    min-width: 0;
+    flex-direction: column;     /* key: button goes below so it doesn't force width */
+    align-items: stretch;
+  }
+
+  header #controlsPanel .row .input:nth-child(2) input{
+    min-width: 0;
+  }
+
+  header #controlsPanel .row .input:nth-child(2) button{
+    width: 100%;
+  }
+
+  /* Sort dropdown gets its own full row */
+  header #controlsPanel .row .input:nth-child(3){
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  header #controlsPanel .row input[type="text"],
+  header #controlsPanel .row select{
+    min-width: 0;
+  }
+}
+
+    @media (max-width: 640px){
+  #applyTagBtn{
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+}
+
   </style>
 </head>
 <body>
@@ -681,11 +722,11 @@
             <input id="urlInput" type="text" placeholder="Paste Grok Imagine public link (post URL) or direct .mp4/.m3u8"/>
             <button class="btn primary compact" id="addBtn">Add</button>
           </div>
-          <div class="input" style="flex: 1 1 220px;">
+          <div class="input">
             <input id="tagInput" type="text" placeholder="Tags (comma-separated) e.g. neon, moody, sci-fi"/>
             <button class="btn compact" id="applyTagBtn" type="button">Tag selected</button>
           </div>
-          <div class="input" style="flex: 0 1 220px;">
+          <div class="input">
             <select id="sortSelect" aria-label="Sort videos">
               <option value="manual">Sort: Manual order</option>
               <option value="added-desc">Sort: Date added (newest first)</option>
@@ -1679,6 +1720,7 @@
 </script>
 </body>
 </html>
+
 
 
 
