@@ -621,6 +621,39 @@
       padding: 8px 0 0;
     }
 
+    @media (max-width: 640px){
+  header .row{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+}
+
+    @media (max-width: 640px){
+  .input{
+    width: 100%;
+    max-width: 100%;
+  }
+
+  input[type="text"]{
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+    @media (max-width: 640px){
+  #hideControlsBtn{
+    align-self: flex-end;
+    margin-top: 4px;
+  }
+}
+
+    @media (max-width: 640px){
+  .tag-selected-pill{
+    display: none;
+  }
+}
+
     
   </style>
 </head>
@@ -669,9 +702,14 @@
     </summary>
     <div class="chips" id="tagChips"></div>
   </details>
+
   <button class="btn" id="shuffleBtn" title="Randomize the video order">Shuffle</button>
+</div>
+
+<div class="controlsRightRow">
   <button class="btn" id="hideControlsBtn">Hide controls</button>
 </div>
+
 
 <input type="file" id="importFile" accept="application/json" />
 
@@ -1641,6 +1679,7 @@
 </script>
 </body>
 </html>
+
 
 
 
