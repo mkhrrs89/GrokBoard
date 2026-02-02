@@ -615,45 +615,48 @@
   }
 }
 
-/* ===== Mobile header layout: URL wide, Tags narrow, Sort full row ===== */
+/* ===== Mobile controls: use GRID so wrap is predictable ===== */
 @media (max-width: 640px){
   header #controlsPanel .row{
-    display:flex;
-    flex-wrap:wrap;
+    display: grid;
+    grid-template-columns: 2.2fr 1fr; /* URL wider than Tags */
     gap: 8px;
+    padding-bottom: 8px;
   }
 
-  /* allow flex items to actually shrink */
-  header #controlsPanel .row .input,
+  header #controlsPanel .row .input{
+    min-width: 0; /* allow shrinking inside grid cells */
+  }
+
+  /* Sort gets its own row */
+  header #controlsPanel .row .input:nth-child(3){
+    grid-column: 1 / -1;
+  }
+
+  /* Prevent input min-widths from forcing wrap */
   header #controlsPanel .row input[type="text"],
   header #controlsPanel .row select{
     min-width: 0;
   }
 
-  /* URL pill gets most space */
-  header #controlsPanel .row .input:nth-child(1){
-    flex: 1 1 72%;
-  }
-  header #controlsPanel .row .input:nth-child(1) button{
-    flex: 0 0 auto;
-  }
-
-  /* Tags pill is smaller BUT stays one-line and doesn't get huge */
-  header #controlsPanel .row .input:nth-child(2){
-    flex: 1 1 28%;
-    flex-direction: row;      /* keeps it from becoming a tall stacked block */
-    align-items: center;
-  }
-  header #controlsPanel .row .input:nth-child(2) button{
-    padding: 6px 8px;         /* keeps button from inflating the whole pill */
+  /* Keep the Tag button from being the reason things wrap */
+  #applyTagBtn{
     white-space: nowrap;
-    flex: 0 0 auto;
+    padding: 6px 8px;
   }
+}
 
-  /* Sort pill full width */
-  header #controlsPanel .row .input:nth-child(3){
-    flex: 1 1 100%;
+/* Super small phones: stack everything */
+@media (max-width: 420px){
+  header #controlsPanel .row{
+    grid-template-columns: 1fr;
   }
+  header #controlsPanel .row .input:nth-child(3){
+    grid-column: auto;
+  }
+}
+@media (max-width: 640px){
+  input[type="text"], select{ min-width: 0; }
 }
 
     
@@ -685,7 +688,7 @@
           </div>
           <div class="input">
             <input id="tagInput" type="text" placeholder="Tags (comma-separated) e.g. neon, moody, sci-fi"/>
-            <button class="btn compact" id="applyTagBtn" type="button">Tag selected</button>
+            <button class="btn compact" id="applyTagBtn" type="button" title="Apply tags to selected videos">Tag</button>
           </div>
           <div class="input">
             <select id="sortSelect" aria-label="Sort videos">
@@ -1681,6 +1684,7 @@
 </script>
 </body>
 </html>
+
 
 
 
