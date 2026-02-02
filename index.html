@@ -531,36 +531,6 @@
 }
 
 
-/* --- Put URL + Tags on the same row on mobile --- */
-@media (max-width: 640px){
-  header .row{
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  /* URL box (with Add button) takes more space */
-  header .row .input:first-child{
-    flex: 1 1 68%;
-    min-width: 0;              /* important so it can shrink */
-  }
-
-  /* Tags box takes less space */
-  header .row .input:nth-child(2){
-    flex: 0 0 26%;
-    min-width: 0;
-  }
-
-  /* Sort dropdown sits on its own line */
-  header .row .input:last-child{
-    flex: 1 1 100%;
-    min-width: 0;
-  }
-
-  /* Prevent placeholder from forcing width */
-  header input[type="text"]{
-    min-width: 0;
-  }
-}
 
     /* Chips row: tags on left, Hide controls on right */
     .chipsRow{
@@ -622,17 +592,6 @@
     }
 
 
-    @media (max-width: 640px){
-  .input{
-    width: 100%;
-    max-width: 100%;
-  }
-
-  input[type="text"]{
-    width: 100%;
-    max-width: 100%;
-  }
-}
 
     @media (max-width: 640px){
   #hideControlsBtn{
@@ -647,47 +606,7 @@
   }
 }
 
-    /* --- Mobile: URL gets most space, Tags compact, Sort full-width --- */
-@media (max-width: 640px){
-  header #controlsPanel .row{
-    display:flex;
-    flex-wrap:wrap;
-    gap: 8px;
-  }
 
-  /* URL + Add button (big) */
-  header #controlsPanel .row .input:nth-child(1){
-    flex: 1 1 72%;
-    min-width: 0;
-  }
-
-  /* Tags (smaller) */
-  header #controlsPanel .row .input:nth-child(2){
-    flex: 1 1 28%;
-    min-width: 0;
-    flex-direction: column;     /* key: button goes below so it doesn't force width */
-    align-items: stretch;
-  }
-
-  header #controlsPanel .row .input:nth-child(2) input{
-    min-width: 0;
-  }
-
-  header #controlsPanel .row .input:nth-child(2) button{
-    width: 100%;
-  }
-
-  /* Sort dropdown gets its own full row */
-  header #controlsPanel .row .input:nth-child(3){
-    flex: 1 1 100%;
-    min-width: 0;
-  }
-
-  header #controlsPanel .row input[type="text"],
-  header #controlsPanel .row select{
-    min-width: 0;
-  }
-}
 
     @media (max-width: 640px){
   #applyTagBtn{
@@ -696,6 +615,48 @@
   }
 }
 
+/* ===== Mobile header layout: URL wide, Tags narrow, Sort full row ===== */
+@media (max-width: 640px){
+  header #controlsPanel .row{
+    display:flex;
+    flex-wrap:wrap;
+    gap: 8px;
+  }
+
+  /* allow flex items to actually shrink */
+  header #controlsPanel .row .input,
+  header #controlsPanel .row input[type="text"],
+  header #controlsPanel .row select{
+    min-width: 0;
+  }
+
+  /* URL pill gets most space */
+  header #controlsPanel .row .input:nth-child(1){
+    flex: 1 1 72%;
+  }
+  header #controlsPanel .row .input:nth-child(1) button{
+    flex: 0 0 auto;
+  }
+
+  /* Tags pill is smaller BUT stays one-line and doesn't get huge */
+  header #controlsPanel .row .input:nth-child(2){
+    flex: 1 1 28%;
+    flex-direction: row;      /* keeps it from becoming a tall stacked block */
+    align-items: center;
+  }
+  header #controlsPanel .row .input:nth-child(2) button{
+    padding: 6px 8px;         /* keeps button from inflating the whole pill */
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
+
+  /* Sort pill full width */
+  header #controlsPanel .row .input:nth-child(3){
+    flex: 1 1 100%;
+  }
+}
+
+    
   </style>
 </head>
 <body>
@@ -1720,6 +1681,7 @@
 </script>
 </body>
 </html>
+
 
 
 
