@@ -557,26 +557,63 @@
 }
 
     /* Chips row: tags on left, Hide controls on right */
-.chipsRow{
-  display:flex;
-  align-items:flex-start; /* aligns button with top/first row */
-  gap: 10px;
-}
+    .chipsRow{
+      display:flex;
+      align-items:flex-start; /* aligns button with top/first row */
+      gap: 10px;
+    }
 
-.chipsRow .chips{
-  flex: 1 1 auto;
-  min-width: 0;          /* critical so chips can wrap */
-}
+    .chipsRow .chips{
+      flex: 1 1 auto;
+      min-width: 0;          /* critical so chips can wrap */
+    }
 
-.chipsRow #hideControlsBtn{
-  flex: 0 0 auto;
-  white-space: nowrap;
-}
+    .chipsRow #hideControlsBtn{
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
 
     @media (max-width: 640px){
-  .chipsRow{ gap: 8px; }
-  .chipsRow #hideControlsBtn{ padding: 7px 10px; }
-}
+      .chipsRow{ gap: 8px; }
+      .chipsRow #hideControlsBtn{ padding: 7px 10px; }
+    }
+
+    .tagMenu{
+      flex: 1 1 auto;
+      min-width: 0;
+      background: var(--panel2);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 8px 10px;
+    }
+
+    .tagMenu summary{
+      list-style: none;
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    .tagMenu summary::-webkit-details-marker{ display:none; }
+
+    .tagMenuMeta{
+      color: var(--muted);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .tagMenu[open]{
+      padding-bottom: 10px;
+    }
+
+    .tagMenu .chips{
+      padding: 8px 0 0;
+    }
 
     
   </style>
@@ -619,7 +656,13 @@
         </div>
 
 <div class="chipsRow">
-  <div class="chips" id="tagChips"></div>
+  <details class="tagMenu" id="tagMenu">
+    <summary>
+      <span>Tags</span>
+      <span class="tagMenuMeta" id="tagMenuMeta"></span>
+    </summary>
+    <div class="chips" id="tagChips"></div>
+  </details>
   <button class="btn" id="shuffleBtn" title="Randomize the video order">Shuffle</button>
   <button class="btn" id="hideControlsBtn">Hide controls</button>
 </div>
@@ -712,6 +755,8 @@
   const toggleControlsFab = document.getElementById("toggleControlsFab");
   const hideControlsBtn = document.getElementById("hideControlsBtn");
   const shuffleBtn = document.getElementById("shuffleBtn");
+  const tagMenu = document.getElementById("tagMenu");
+  const tagMenuMeta = document.getElementById("tagMenuMeta");
 
   // --- Utilities
   const now = () => Date.now();
@@ -746,9 +791,12 @@
       const raw = localStorage.getItem(UI_KEY);
       if(!raw) return { collapsedMobile: true };
       const j = JSON.parse(raw);
-      return { collapsedMobile: j.collapsedMobile !== false };
+      return {
+        collapsedMobile: j.collapsedMobile !== false,
+        tagMenuOpen: j.tagMenuOpen === true
+      };
     }catch{
-      return { collapsedMobile: true };
+      return { collapsedMobile: true, tagMenuOpen: false };
     }
   }
 
@@ -757,6 +805,14 @@
   }
 
   let uiState = loadUI();
+
+  if(tagMenu){
+    tagMenu.open = !!uiState.tagMenuOpen;
+    tagMenu.addEventListener("toggle", () => {
+      uiState.tagMenuOpen = tagMenu.open;
+      saveUI(uiState);
+    });
+  }
 
   function applyControlsCollapse(){
     if(window.matchMedia("(max-width: 640px)").matches){
@@ -1305,6 +1361,10 @@
 
   function renderTags(){
     const tagList = allTags();
+    const tagMeta = `${tagList.length} tag${tagList.length === 1 ? "" : "s"}${state.ui.activeTag ? ` • #${state.ui.activeTag}` : ""}`;
+    if(tagMenuMeta){
+      tagMenuMeta.textContent = tagMeta;
+    }
 
     const chips = [];
     chips.push(`
