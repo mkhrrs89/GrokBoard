@@ -92,6 +92,20 @@
       font-size:14px;
       min-width: 170px;
     }
+    select{
+      flex:1;
+      border:none;
+      outline:none;
+      background: transparent;
+      color: var(--text);
+      font-size:14px;
+      min-width: 170px;
+      appearance: none;
+    }
+    select option{
+      background: var(--panel2);
+      color: var(--text);
+    }
     input::placeholder{ color: #6f788a; }
     .chips{
       display:flex; gap:8px; flex-wrap:wrap;
@@ -357,6 +371,11 @@
       backdrop-filter: blur(10px);
     }
     .dragHandle:active{ cursor:grabbing; transform: translateY(1px); }
+    .dragHandle.disabled{
+      opacity: 0.35;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
 
     .card.dragging{
       opacity: 0.55;
@@ -586,6 +605,13 @@
             <input id="tagInput" type="text" placeholder="Tags (comma-separated) e.g. neon, moody, sci-fi"/>
             <button class="btn compact" id="applyTagBtn" type="button">Tag selected</button>
           </div>
+          <div class="input" style="flex: 0 1 220px;">
+            <select id="sortSelect" aria-label="Sort videos">
+              <option value="manual">Sort: Manual order</option>
+              <option value="added-desc">Sort: Date added (newest first)</option>
+              <option value="added-asc">Sort: Date added (oldest first)</option>
+            </select>
+          </div>
         </div>
 
 <div class="chipsRow">
@@ -645,10 +671,10 @@
   const RESOLVER_BASE = "https://nameless-morning-980f.mkhrrs89.workers.dev";
 
 
-  /** @type {{items: Array<{id:string,sourceUrl:string,mediaUrl:string,tags:string[],addedAt:number}>, ui:{activeTag:string|null,page:number,selected:string[]}}} */
+  /** @type {{items: Array<{id:string,sourceUrl:string,mediaUrl:string,tags:string[],addedAt:number}>, ui:{activeTag:string|null,page:number,selected:string[],sort:string}}} */
   let state = {
     items: [],
-    ui: { activeTag: null, page: 1, selected: [] }
+    ui: { activeTag: null, page: 1, selected: [], sort: "manual" }
   };
 
   // Elements
@@ -663,6 +689,7 @@
   const pageLabel = document.getElementById("pageLabel");
   const prevPageBtn = document.getElementById("prevPageBtn");
   const nextPageBtn = document.getElementById("nextPageBtn");
+  const sortSelect = document.getElementById("sortSelect");
 
   const exportBtn = document.getElementById("exportBtn");
   const importBtn = document.getElementById("importBtn");
@@ -782,8 +809,14 @@
 
   function filteredItems(){
     const tag = state.ui.activeTag;
-    if(!tag) return state.items;
-    return state.items.filter(it => it.tags.includes(tag));
+    const items = tag ? state.items.filter(it => it.tags.includes(tag)) : state.items;
+    if(state.ui.sort === "added-asc"){
+      return [...items].sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0) || a.id.localeCompare(b.id));
+    }
+    if(state.ui.sort === "added-desc"){
+      return [...items].sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0) || a.id.localeCompare(b.id));
+    }
+    return items;
   }
 
   function pageCount(total){
@@ -1344,6 +1377,9 @@
 
     const selectedSet = new Set(Array.isArray(state.ui.selected) ? state.ui.selected : []);
 
+    const dragDisabled = state.ui.sort !== "manual";
+    grid.dataset.sort = state.ui.sort || "manual";
+
     grid.innerHTML = slice.map(it => {
       const tagPills = it.tags.slice(0,6).map(t => `<span class="tagPill">#${escapeHtml(t)}</span>`).join("");
       const more = it.tags.length > 6 ? `<span class="tagPill">+${it.tags.length-6}</span>` : "";
@@ -1359,7 +1395,7 @@
               <input type="checkbox" data-act="select" ${selected ? "checked" : ""} />
               <span></span>
             </label>
-            <div class="dragHandle" title="Press & hold, then drag">≡</div>
+            <div class="dragHandle ${dragDisabled ? "disabled" : ""}" title="${dragDisabled ? "Sorting by date disables manual reorder" : "Press & hold, then drag"}">≡</div>
             <video
               preload="metadata"
               playsinline
@@ -1432,11 +1468,16 @@
         pauseVideo(vid);
       });
 
-      wireDragForCard(card);
+      if(!dragDisabled){
+        wireDragForCard(card);
+      }
     });
   }
 
   function render(){
+    if(sortSelect){
+      sortSelect.value = state.ui.sort || "manual";
+    }
     renderTags();
     renderGrid();
   }
@@ -1454,6 +1495,15 @@
   nextPageBtn.addEventListener("click", () => { if(!nextPageBtn.disabled) nextPage(); });
 
   exportBtn.addEventListener("click", exportJson);
+  if(sortSelect){
+    sortSelect.addEventListener("change", () => {
+      const nextSort = sortSelect.value || "manual";
+      state.ui.sort = nextSort;
+      state.ui.page = 1;
+      save();
+      render();
+    });
+  }
 
   importBtn.addEventListener("click", () => importFile.click());
   importFile.addEventListener("change", async () => {
@@ -1467,7 +1517,7 @@
   wipeBtn.addEventListener("click", () => {
     const ok = confirm("Wipe EVERYTHING from this device? (cannot undo)");
     if(!ok) return;
-    state = { items: [], ui: { activeTag: null, page: 1, selected: [] } };
+    state = { items: [], ui: { activeTag: null, page: 1, selected: [], sort: "manual" } };
     save();
     render();
     showToast("Wiped ✅");
@@ -1501,10 +1551,16 @@
     return { ...it, tags };
   });
 
-  if(typeof state.ui?.page !== "number") state.ui = { activeTag: null, page: 1, selected: [] };
+  if(typeof state.ui?.page !== "number") state.ui = { activeTag: null, page: 1, selected: [], sort: "manual" };
   if(!Array.isArray(state.ui.selected)) state.ui.selected = [];
   if(typeof state.ui.activeTag === "string"){
     state.ui.activeTag = normalizeTag(state.ui.activeTag) || null;
+  }
+  if(typeof state.ui.sort !== "string"){
+    state.ui.sort = "manual";
+  }
+  if(!["manual", "added-asc", "added-desc"].includes(state.ui.sort)){
+    state.ui.sort = "manual";
   }
   if(!Array.isArray(state.items)) state.items = [];
   clampPage();
