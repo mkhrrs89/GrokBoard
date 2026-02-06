@@ -1059,10 +1059,25 @@ header{ outline: 6px solid #ff00ff !important; }
       showToast("Not enough videos to shuffle");
       return;
     }
-    for(let i = state.items.length - 1; i > 0; i -= 1){
-      const j = Math.floor(Math.random() * (i + 1));
-      [state.items[i], state.items[j]] = [state.items[j], state.items[i]];
+
+    const originalOrder = state.items.map(item => item.id).join("|");
+    let attempts = 0;
+
+    do {
+      for(let i = state.items.length - 1; i > 0; i -= 1){
+        const j = Math.floor(Math.random() * (i + 1));
+        [state.items[i], state.items[j]] = [state.items[j], state.items[i]];
+      }
+      attempts += 1;
+    } while (attempts < 5 && state.items.map(item => item.id).join("|") === originalOrder);
+
+    if(state.items.map(item => item.id).join("|") === originalOrder){
+      const first = state.items.shift();
+      if(first) state.items.push(first);
     }
+
+    state.ui.sort = "manual";
+    if(sortSelect) sortSelect.value = "manual";
     save();
     render();
     showToast("Shuffled 🎲");
