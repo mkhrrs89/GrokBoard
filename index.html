@@ -1553,6 +1553,7 @@ header{ outline: 6px solid #ff00ff !important; }
       const id = card.getAttribute("data-id");
       const item = state.items.find(x => x.id === id);
       const vid = card.querySelector("video");
+      const selectInput = card.querySelector("input[data-act=\"select\"]");
 
       configureAutoplayVideo(vid);
       wirePlaybackState(vid);
@@ -1561,9 +1562,22 @@ header{ outline: 6px solid #ff00ff !important; }
         vid.play().catch(()=>{});
       }
 
-      // Tap video to open viewer (but not drag handle)
+      // Tap video: in multi-select mode, add to selection; otherwise open viewer.
       vid.addEventListener("click", (e) => {
         e.preventDefault();
+        const selectedIds = Array.isArray(state.ui.selected) ? state.ui.selected : [];
+        const hasSelection = selectedIds.length > 0;
+        const alreadySelected = selectedIds.includes(id);
+
+        if(hasSelection && !alreadySelected){
+          toggleSelection(id, true);
+          if(selectInput){
+            selectInput.checked = true;
+          }
+          card.classList.add("checked", "selected");
+          return;
+        }
+
         if(item) openViewer(item);
       });
 
@@ -1581,7 +1595,6 @@ header{ outline: 6px solid #ff00ff !important; }
         });
       });
 
-      const selectInput = card.querySelector("input[data-act=\"select\"]");
       if(selectInput){
         selectInput.addEventListener("click", (e) => {
           e.stopPropagation();
