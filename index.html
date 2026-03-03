@@ -222,6 +222,20 @@
       padding:8px;
       border-top:1px solid rgba(32,36,51,0.7);
     }
+
+    body.hide-card-info .cardBar{
+      display:none;
+    }
+
+    body.hide-card-info .grid{
+      gap:1px;
+      background:#000;
+    }
+
+    body.hide-card-info .card{
+      border-radius:0;
+      border:none;
+    }
     .tagsLine{
       display:flex; gap:6px; flex-wrap:wrap;
       max-width: 100%;
@@ -676,10 +690,6 @@
   }
 }
 
-/* ===== CANARY: if you don't see this, mobile is NOT loading this file ===== */
-header{ outline: 6px solid #ff00ff !important; }
-
-    
   </style>
 </head>
 <body>
@@ -732,6 +742,7 @@ header{ outline: 6px solid #ff00ff !important; }
 </div>
 
 <div class="controlsRightRow">
+  <button class="btn" id="toggleInfoBarsBtn">Hide info bars</button>
   <button class="btn" id="hideControlsBtn">Hide controls</button>
 </div>
 
@@ -823,6 +834,7 @@ header{ outline: 6px solid #ff00ff !important; }
   const toggleControlsBtn = document.getElementById("toggleControlsBtn");
   const toggleControlsFab = document.getElementById("toggleControlsFab");
   const hideControlsBtn = document.getElementById("hideControlsBtn");
+  const toggleInfoBarsBtn = document.getElementById("toggleInfoBarsBtn");
   const shuffleBtn = document.getElementById("shuffleBtn");
   const tagMenu = document.getElementById("tagMenu");
   const tagMenuMeta = document.getElementById("tagMenuMeta");
@@ -858,14 +870,15 @@ header{ outline: 6px solid #ff00ff !important; }
   function loadUI(){
     try{
       const raw = localStorage.getItem(UI_KEY);
-      if(!raw) return { collapsedMobile: true };
+      if(!raw) return { collapsedMobile: true, tagMenuOpen: false, hideCardInfo: false };
       const j = JSON.parse(raw);
       return {
         collapsedMobile: j.collapsedMobile !== false,
-        tagMenuOpen: j.tagMenuOpen === true
+        tagMenuOpen: j.tagMenuOpen === true,
+        hideCardInfo: j.hideCardInfo === true
       };
     }catch{
-      return { collapsedMobile: true, tagMenuOpen: false };
+      return { collapsedMobile: true, tagMenuOpen: false, hideCardInfo: false };
     }
   }
 
@@ -1098,6 +1111,19 @@ header{ outline: 6px solid #ff00ff !important; }
     save();
     render();
     showToast("Shuffled 🎲");
+  }
+
+  function applyCardInfoVisibility(){
+    document.body.classList.toggle("hide-card-info", !!uiState.hideCardInfo);
+    if(toggleInfoBarsBtn){
+      toggleInfoBarsBtn.textContent = uiState.hideCardInfo ? "Show info bars" : "Hide info bars";
+    }
+  }
+
+  function toggleCardInfoVisibility(){
+    uiState.hideCardInfo = !uiState.hideCardInfo;
+    saveUI(uiState);
+    applyCardInfoVisibility();
   }
 
   function toggleSelection(id, checked){
@@ -1695,6 +1721,9 @@ header{ outline: 6px solid #ff00ff !important; }
   toggleControlsBtn.addEventListener("click", toggleControls);
   toggleControlsFab.addEventListener("click", toggleControls);
   hideControlsBtn.addEventListener("click", toggleControls);
+  if(toggleInfoBarsBtn){
+    toggleInfoBarsBtn.addEventListener("click", toggleCardInfoVisibility);
+  }
   if(shuffleBtn){
     shuffleBtn.addEventListener("click", shuffleItems);
   }
@@ -1728,6 +1757,7 @@ header{ outline: 6px solid #ff00ff !important; }
   save();
   render();
   applyControlsCollapse();
+  applyCardInfoVisibility();
 })();
 </script>
 </body>
