@@ -174,6 +174,59 @@
       aspect-ratio: 9 / 16;
       background:#07080b;
     }
+    .tagCornerBtn{
+      position:absolute;
+      right:8px;
+      bottom:8px;
+      z-index:4;
+      width:24px;
+      height:24px;
+      border-radius:8px;
+      border:1px solid rgba(255,255,255,0.2);
+      background: rgba(17,19,26,0.8);
+      color: var(--text);
+      display:grid;
+      place-items:center;
+      font-size:12px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .tagPopup{
+      position:absolute;
+      right:8px;
+      bottom:40px;
+      z-index:6;
+      width:min(190px, calc(100% - 16px));
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.16);
+      background: rgba(10,11,16,0.95);
+      padding:8px;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.45);
+    }
+    .tagPopupTitle{ font-size:11px; color: var(--muted); margin-bottom:6px; }
+    .tagPopupTags{ display:flex; flex-wrap:wrap; gap:5px; max-height:72px; overflow:auto; margin-bottom:8px; }
+    .tagPopupTags .tagPill{ font-size:10px; padding:3px 6px; }
+    .tagPopupEmpty{ font-size:11px; color: var(--muted); margin-bottom:8px; }
+    .tagPopupAdd{ display:flex; gap:6px; align-items:center; }
+    .tagPopupAdd input{
+      flex:1;
+      min-width:0;
+      border:1px solid rgba(255,255,255,0.14);
+      border-radius:8px;
+      background: rgba(17,19,26,0.85);
+      color: var(--text);
+      font-size:11px;
+      padding:6px;
+    }
+    .tagPopupAdd button{
+      border:1px solid rgba(122,167,255,0.35);
+      border-radius:8px;
+      padding:6px 7px;
+      font-size:11px;
+      background: rgba(17,19,26,0.9);
+      color: var(--text);
+      cursor:pointer;
+    }
     .selectBox{
       position:absolute;
       top:10px;
@@ -887,6 +940,7 @@
   }
 
   let uiState = loadUI();
+  let openTagPopupId = null;
 
   if(tagMenu){
     tagMenu.open = !!uiState.tagMenuOpen;
@@ -895,6 +949,16 @@
       saveUI(uiState);
     });
   }
+
+  document.addEventListener("click", (e) => {
+    if(!openTagPopupId) return;
+    const target = e.target;
+    if(!(target instanceof Element)) return;
+    if(target.closest('[data-role="tag-popup"]')) return;
+    if(target.closest('[data-act="toggle-tag-popup"]')) return;
+    openTagPopupId = null;
+    render();
+  });
 
   function applyControlsCollapse(){
     if(window.matchMedia("(max-width: 640px)").matches){
@@ -1044,6 +1108,16 @@
     save();
     render();
     showToast("Tags updated ✨");
+  }
+
+  function addTagsToItem(id, tagsToAdd){
+    const item = state.items.find(it => it.id === id);
+    if(!item) return false;
+    const merged = new Set(item.tags || []);
+    tagsToAdd.forEach(tag => merged.add(tag));
+    item.tags = Array.from(merged);
+    save();
+    return true;
   }
 
   function applyTagsToSelected(){
@@ -1558,6 +1632,11 @@
       const tagPills = it.tags.slice(0,6).map(t => `<span class="tagPill">#${escapeHtml(t)}</span>`).join("");
       const more = it.tags.length > 6 ? `<span class="tagPill">+${it.tags.length-6}</span>` : "";
       const warn = looksLikeVideoUrl(it.mediaUrl) ? "" : `<span class="tagPill" title="May not be a direct video URL">link?</span>`;
+      const popupTags = it.tags.map(t => `<span class="tagPill">#${escapeHtml(t)}</span>`).join("");
+      const popupBody = it.tags.length
+        ? `<div class="tagPopupTags">${popupTags}</div>`
+        : `<div class="tagPopupEmpty">No tags yet.</div>`;
+      const isTagPopupOpen = openTagPopupId === it.id;
 
       const src = it.mediaUrl || it.sourceUrl;
       const selected = selectedSet.has(it.id);
@@ -1579,11 +1658,21 @@
               webkit-playsinline
               src="${escapeAttr(src)}"
             ></video>
+            <button class="tagCornerBtn" data-act="toggle-tag-popup" title="Show tags">🏷</button>
+            ${isTagPopupOpen ? `
+              <div class="tagPopup" data-role="tag-popup">
+                <div class="tagPopupTitle">Video tags</div>
+                ${popupBody}
+                <div class="tagPopupAdd">
+                  <input type="text" data-role="tag-add-input" placeholder="add tag(s)" />
+                  <button type="button" data-act="add-popup-tags">Add</button>
+                </div>
+              </div>
+            ` : ""}
           </div>
           <div class="cardBar">
             <div class="tagsLine">${warn}${tagPills}${more}</div>
             <div class="actions">
-              <button class="iconBtn" data-act="tags" title="Edit tags">🏷️</button>
               <button class="iconBtn danger" data-act="del" title="Delete">✕</button>
             </div>
           </div>
@@ -1629,14 +1718,46 @@
           e.stopPropagation();
           const act = btn.getAttribute("data-act");
           if(act === "del") deleteItem(id);
-          if(act === "tags"){
-            const current = item ? item.tags.join(", ") : "";
-            const next = prompt("Edit tags (comma-separated). Leave empty to clear:", current);
-            if(next === null) return;
-            updateItemTags(id, parseTags(next));
+          if(act === "toggle-tag-popup"){
+            openTagPopupId = openTagPopupId === id ? null : id;
+            render();
+          }
+          if(act === "add-popup-tags"){
+            const input = card.querySelector('input[data-role="tag-add-input"]');
+            const tags = parseTags(input ? input.value : "");
+            if(tags.length === 0){
+              showToast("Type at least one tag");
+              return;
+            }
+            const updated = addTagsToItem(id, tags);
+            if(updated){
+              openTagPopupId = id;
+              render();
+              showToast("Tags added ✨");
+            }
           }
         });
       });
+
+      const popupInput = card.querySelector('input[data-role="tag-add-input"]');
+      if(popupInput){
+        popupInput.addEventListener("click", (e) => e.stopPropagation());
+        popupInput.addEventListener("keydown", (e) => {
+          if(e.key !== "Enter") return;
+          e.preventDefault();
+          const tags = parseTags(popupInput.value);
+          if(tags.length === 0){
+            showToast("Type at least one tag");
+            return;
+          }
+          const updated = addTagsToItem(id, tags);
+          if(updated){
+            openTagPopupId = id;
+            render();
+            showToast("Tags added ✨");
+          }
+        });
+      }
 
       if(selectInput){
         selectInput.addEventListener("click", (e) => {
