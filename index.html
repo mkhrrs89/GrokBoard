@@ -956,8 +956,7 @@
     if(!(target instanceof Element)) return;
     if(target.closest('[data-role="tag-popup"]')) return;
     if(target.closest('[data-act="toggle-tag-popup"]')) return;
-    openTagPopupId = null;
-    render();
+    closeTagPopup();
   });
 
   function applyControlsCollapse(){
@@ -1118,6 +1117,87 @@
     item.tags = Array.from(merged);
     save();
     return true;
+  }
+
+  function closeTagPopup(){
+    if(!openTagPopupId) return;
+    const openCard = grid.querySelector(`.card[data-id="${CSS.escape(openTagPopupId)}"]`);
+    const popup = openCard && openCard.querySelector('[data-role="tag-popup"]');
+    if(popup) popup.remove();
+    openTagPopupId = null;
+  }
+
+  function renderTagPopupForCard(id){
+    const card = grid.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
+    const item = state.items.find(x => x.id === id);
+    if(!card || !item) return;
+
+    const thumb = card.querySelector(".thumb");
+    if(!thumb) return;
+
+    const popup = document.createElement("div");
+    popup.className = "tagPopup";
+    popup.setAttribute("data-role", "tag-popup");
+
+    const popupTags = item.tags.map(t => `<span class="tagPill">#${escapeHtml(t)}</span>`).join("");
+    const popupBody = item.tags.length
+      ? `<div class="tagPopupTags">${popupTags}</div>`
+      : `<div class="tagPopupEmpty">No tags yet.</div>`;
+
+    popup.innerHTML = `
+      <div class="tagPopupTitle">Video tags</div>
+      ${popupBody}
+      <div class="tagPopupAdd">
+        <input type="text" data-role="tag-add-input" placeholder="add tag(s)" />
+        <button type="button" data-act="add-popup-tags">Add</button>
+      </div>
+    `;
+
+    const popupInput = popup.querySelector('input[data-role="tag-add-input"]');
+    const addBtn = popup.querySelector('button[data-act="add-popup-tags"]');
+
+    const submitPopupTags = () => {
+      const tags = parseTags(popupInput ? popupInput.value : "");
+      if(tags.length === 0){
+        showToast("Type at least one tag");
+        return;
+      }
+      const updated = addTagsToItem(id, tags);
+      if(updated){
+        openTagPopupId = null;
+        render();
+        showToast("Tags added ✨");
+      }
+    };
+
+    if(addBtn){
+      addBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        submitPopupTags();
+      });
+    }
+
+    if(popupInput){
+      popupInput.addEventListener("click", (e) => e.stopPropagation());
+      popupInput.addEventListener("keydown", (e) => {
+        if(e.key !== "Enter") return;
+        e.preventDefault();
+        submitPopupTags();
+      });
+    }
+
+    popup.addEventListener("click", (e) => e.stopPropagation());
+    thumb.appendChild(popup);
+    openTagPopupId = id;
+  }
+
+  function toggleTagPopup(id){
+    if(openTagPopupId === id){
+      closeTagPopup();
+      return;
+    }
+    closeTagPopup();
+    renderTagPopupForCard(id);
   }
 
   function applyTagsToSelected(){
@@ -1632,12 +1712,6 @@
       const tagPills = it.tags.slice(0,6).map(t => `<span class="tagPill">#${escapeHtml(t)}</span>`).join("");
       const more = it.tags.length > 6 ? `<span class="tagPill">+${it.tags.length-6}</span>` : "";
       const warn = looksLikeVideoUrl(it.mediaUrl) ? "" : `<span class="tagPill" title="May not be a direct video URL">link?</span>`;
-      const popupTags = it.tags.map(t => `<span class="tagPill">#${escapeHtml(t)}</span>`).join("");
-      const popupBody = it.tags.length
-        ? `<div class="tagPopupTags">${popupTags}</div>`
-        : `<div class="tagPopupEmpty">No tags yet.</div>`;
-      const isTagPopupOpen = openTagPopupId === it.id;
-
       const src = it.mediaUrl || it.sourceUrl;
       const selected = selectedSet.has(it.id);
 
@@ -1659,16 +1733,6 @@
               src="${escapeAttr(src)}"
             ></video>
             <button class="tagCornerBtn" data-act="toggle-tag-popup" title="Show tags">🏷</button>
-            ${isTagPopupOpen ? `
-              <div class="tagPopup" data-role="tag-popup">
-                <div class="tagPopupTitle">Video tags</div>
-                ${popupBody}
-                <div class="tagPopupAdd">
-                  <input type="text" data-role="tag-add-input" placeholder="add tag(s)" />
-                  <button type="button" data-act="add-popup-tags">Add</button>
-                </div>
-              </div>
-            ` : ""}
           </div>
           <div class="cardBar">
             <div class="tagsLine">${warn}${tagPills}${more}</div>
@@ -1719,45 +1783,10 @@
           const act = btn.getAttribute("data-act");
           if(act === "del") deleteItem(id);
           if(act === "toggle-tag-popup"){
-            openTagPopupId = openTagPopupId === id ? null : id;
-            render();
-          }
-          if(act === "add-popup-tags"){
-            const input = card.querySelector('input[data-role="tag-add-input"]');
-            const tags = parseTags(input ? input.value : "");
-            if(tags.length === 0){
-              showToast("Type at least one tag");
-              return;
-            }
-            const updated = addTagsToItem(id, tags);
-            if(updated){
-              openTagPopupId = id;
-              render();
-              showToast("Tags added ✨");
-            }
+            toggleTagPopup(id);
           }
         });
       });
-
-      const popupInput = card.querySelector('input[data-role="tag-add-input"]');
-      if(popupInput){
-        popupInput.addEventListener("click", (e) => e.stopPropagation());
-        popupInput.addEventListener("keydown", (e) => {
-          if(e.key !== "Enter") return;
-          e.preventDefault();
-          const tags = parseTags(popupInput.value);
-          if(tags.length === 0){
-            showToast("Type at least one tag");
-            return;
-          }
-          const updated = addTagsToItem(id, tags);
-          if(updated){
-            openTagPopupId = id;
-            render();
-            showToast("Tags added ✨");
-          }
-        });
-      }
 
       if(selectInput){
         selectInput.addEventListener("click", (e) => {
@@ -1883,7 +1912,6 @@
 </script>
 </body>
 </html>
-
 
 
 
