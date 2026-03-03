@@ -1569,7 +1569,7 @@
               <input type="checkbox" data-act="select" ${selected ? "checked" : ""} />
               <span></span>
             </label>
-            <div class="dragHandle ${dragDisabled ? "disabled" : ""}" title="${dragDisabled ? "Sorting by date disables manual reorder" : "Press & hold, then drag"}">≡</div>
+            ${dragDisabled ? "" : '<div class="dragHandle" title="Press & hold, then drag">≡</div>'}
             <video
               preload="metadata"
               playsinline
