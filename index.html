@@ -127,6 +127,11 @@
     }
     .chip small{ color: var(--muted); font-size:12px; }
     .chip.active{ background: var(--chipActive); border-color: rgba(122,167,255,0.35); }
+    .chip.exclude{
+      background: rgba(120, 28, 28, 0.5);
+      border-color: rgba(255,77,77,0.5);
+      color: #ffd3d3;
+    }
     main{ max-width:980px; margin:0 auto; padding: 12px; }
     .metaBar{
       display:flex; justify-content:space-between; align-items:center; gap:10px;
@@ -662,6 +667,34 @@
       padding: 8px 0 0;
     }
 
+    .tagMatchMode{
+      margin-top: 8px;
+      display:flex;
+      gap:6px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    .tagMatchModeLabel{
+      font-size:11px;
+      color: var(--muted);
+    }
+
+    .tagMatchBtn{
+      border:1px solid var(--line);
+      background: var(--chip);
+      color: var(--text);
+      border-radius:999px;
+      padding:5px 9px;
+      font-size:11px;
+      cursor:pointer;
+    }
+
+    .tagMatchBtn.active{
+      background: var(--chipActive);
+      border-color: rgba(122,167,255,0.35);
+    }
+
 
 
     @media (max-width: 640px){
@@ -855,10 +888,10 @@
   const RESOLVER_BASE = "https://nameless-morning-980f.mkhrrs89.workers.dev";
 
 
-  /** @type {{items: Array<{id:string,sourceUrl:string,mediaUrl:string,tags:string[],addedAt:number}>, ui:{activeTag:string|null,page:number,selected:string[],sort:string}}} */
+  /** @type {{items: Array<{id:string,sourceUrl:string,mediaUrl:string,tags:string[],addedAt:number}>, ui:{tagFilters:Record<string,"include"|"exclude">,tagMatchMode:"all"|"any",page:number,selected:string[],sort:string}}} */
   let state = {
     items: [],
-    ui: { activeTag: null, page: 1, selected: [], sort: "manual" }
+    ui: { tagFilters: {}, tagMatchMode: "all", page: 1, selected: [], sort: "manual" }
   };
 
   // Elements
@@ -1017,8 +1050,16 @@
   }
 
   function filteredItems(){
-    const tag = state.ui.activeTag;
-    const items = tag ? state.items.filter(it => it.tags.includes(tag)) : state.items;
+    const filters = Object.entries(state.ui.tagFilters || {}).filter(([, mode]) => mode === "include" || mode === "exclude");
+    const mode = state.ui.tagMatchMode === "any" ? "any" : "all";
+    const items = filters.length === 0
+      ? state.items
+      : state.items.filter(it => {
+        const matches = filters.map(([tag, filterMode]) => {
+          return filterMode === "include" ? it.tags.includes(tag) : !it.tags.includes(tag);
+        });
+        return mode === "all" ? matches.every(Boolean) : matches.some(Boolean);
+      });
     if(state.ui.sort === "added-asc"){
       return [...items].sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0) || a.id.localeCompare(b.id));
     }
@@ -1235,8 +1276,39 @@
     }
   }
 
-  function setActiveTag(tag){
-    state.ui.activeTag = tag;
+  function setTagFilterState(tag, mode){
+    const normalized = normalizeTag(tag);
+    if(!normalized) return;
+    if(!state.ui.tagFilters || typeof state.ui.tagFilters !== "object"){
+      state.ui.tagFilters = {};
+    }
+    if(mode === "include" || mode === "exclude"){
+      state.ui.tagFilters[normalized] = mode;
+    }else{
+      delete state.ui.tagFilters[normalized];
+    }
+    state.ui.page = 1;
+    save();
+    render();
+  }
+
+  function cycleTagFilter(tag){
+    const normalized = normalizeTag(tag);
+    if(!normalized) return;
+    const current = state.ui.tagFilters?.[normalized] || "neutral";
+    const next = current === "neutral" ? "include" : current === "include" ? "exclude" : "neutral";
+    setTagFilterState(normalized, next);
+  }
+
+  function clearTagFilters(){
+    state.ui.tagFilters = {};
+    state.ui.page = 1;
+    save();
+    render();
+  }
+
+  function setTagMatchMode(mode){
+    state.ui.tagMatchMode = mode === "any" ? "any" : "all";
     state.ui.page = 1;
     save();
     render();
@@ -1629,23 +1701,36 @@
 
   function renderTags(){
     const tagList = allTags();
-    const tagMeta = `${tagList.length} tag${tagList.length === 1 ? "" : "s"}${state.ui.activeTag ? ` • #${state.ui.activeTag}` : ""}`;
+    const filters = Object.entries(state.ui.tagFilters || {}).filter(([, mode]) => mode === "include" || mode === "exclude");
+    const tagMeta = `${tagList.length} tag${tagList.length === 1 ? "" : "s"}${filters.length ? ` • ${filters.length} active` : ""}`;
     if(tagMenuMeta){
       tagMenuMeta.textContent = tagMeta;
     }
 
     const chips = [];
     chips.push(`
-      <div class="chip ${state.ui.activeTag === null ? "active":""}" data-tag="">
+      <div class="chip ${filters.length === 0 ? "active":""}" data-tag="">
         All <small>(${state.items.length})</small>
       </div>
     `);
 
     for(const [tag,count] of tagList){
-      const active = state.ui.activeTag === tag ? "active" : "";
+      const filterMode = state.ui.tagFilters?.[tag] || "neutral";
+      const chipClass = filterMode === "include" ? "active" : (filterMode === "exclude" ? "exclude" : "");
+      const marker = filterMode === "include" ? "✓ " : (filterMode === "exclude" ? "✕ " : "");
       chips.push(`
-        <div class="chip ${active}" data-tag="${escapeAttr(tag)}">
-          #${escapeHtml(tag)} <small>(${count})</small>
+        <div class="chip ${chipClass}" data-tag="${escapeAttr(tag)}">
+          ${marker}#${escapeHtml(tag)} <small>(${count})</small>
+        </div>
+      `);
+    }
+
+    if(filters.length > 1){
+      chips.push(`
+        <div class="tagMatchMode">
+          <span class="tagMatchModeLabel">Match</span>
+          <button type="button" class="tagMatchBtn ${state.ui.tagMatchMode !== "any" ? "active" : ""}" data-match-mode="all">all</button>
+          <button type="button" class="tagMatchBtn ${state.ui.tagMatchMode === "any" ? "active" : ""}" data-match-mode="any">any</button>
         </div>
       `);
     }
@@ -1654,7 +1739,18 @@
     tagChips.querySelectorAll(".chip").forEach(ch => {
       ch.addEventListener("click", () => {
         const t = ch.getAttribute("data-tag");
-        setActiveTag(t ? t : null);
+        if(t){
+          cycleTagFilter(t);
+          return;
+        }
+        clearTagFilters();
+      });
+    });
+
+    tagChips.querySelectorAll(".tagMatchBtn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const mode = btn.getAttribute("data-match-mode") === "any" ? "any" : "all";
+        setTagMatchMode(mode);
       });
     });
   }
@@ -1689,7 +1785,17 @@
     const end = Math.min(total, start + PAGE_SIZE);
     const slice = items.slice(start, end);
 
-    metaLeft.textContent = state.ui.activeTag ? `Showing #${state.ui.activeTag}` : "Showing all videos";
+    const filters = Object.entries(state.ui.tagFilters || {}).filter(([, mode]) => mode === "include" || mode === "exclude");
+    if(filters.length === 0){
+      metaLeft.textContent = "Showing all videos";
+    }else{
+      const include = filters.filter(([, mode]) => mode === "include").map(([tag]) => `#${tag}`);
+      const exclude = filters.filter(([, mode]) => mode === "exclude").map(([tag]) => `#${tag}`);
+      const parts = [];
+      if(include.length) parts.push(`include ${include.join(", ")}`);
+      if(exclude.length) parts.push(`exclude ${exclude.join(", ")}`);
+      metaLeft.textContent = `Showing ${parts.join(" • ")} (${state.ui.tagMatchMode === "any" ? "match any" : "match all"})`;
+    }
     updateSelectionSummary(total, maxPages, page);
 
     pageLabel.textContent = `Page ${page} of ${maxPages}`;
@@ -1863,7 +1969,7 @@
   wipeBtn.addEventListener("click", () => {
     const ok = confirm("Wipe EVERYTHING from this device? (cannot undo)");
     if(!ok) return;
-    state = { items: [], ui: { activeTag: null, page: 1, selected: [], sort: "manual" } };
+    state = { items: [], ui: { tagFilters: {}, tagMatchMode: "all", page: 1, selected: [], sort: "manual" } };
     save();
     render();
     showToast("Wiped ✅");
@@ -1900,11 +2006,24 @@
     return { ...it, tags };
   });
 
-  if(typeof state.ui?.page !== "number") state.ui = { activeTag: null, page: 1, selected: [], sort: "manual" };
+  if(typeof state.ui?.page !== "number") state.ui = { tagFilters: {}, tagMatchMode: "all", page: 1, selected: [], sort: "manual" };
   if(!Array.isArray(state.ui.selected)) state.ui.selected = [];
+  if(!state.ui.tagFilters || typeof state.ui.tagFilters !== "object") state.ui.tagFilters = {};
   if(typeof state.ui.activeTag === "string"){
-    state.ui.activeTag = normalizeTag(state.ui.activeTag) || null;
+    const migratedTag = normalizeTag(state.ui.activeTag);
+    if(migratedTag) state.ui.tagFilters[migratedTag] = "include";
   }
+  const normalizedTagFilters = {};
+  for(const [tag, mode] of Object.entries(state.ui.tagFilters)){
+    const normalized = normalizeTag(tag);
+    if(!normalized) continue;
+    if(mode === "include" || mode === "exclude") normalizedTagFilters[normalized] = mode;
+  }
+  state.ui.tagFilters = normalizedTagFilters;
+  if(state.ui.tagMatchMode !== "any" && state.ui.tagMatchMode !== "all"){
+    state.ui.tagMatchMode = "all";
+  }
+  delete state.ui.activeTag;
   if(typeof state.ui.sort !== "string"){
     state.ui.sort = "manual";
   }
@@ -1921,7 +2040,6 @@
 </script>
 </body>
 </html>
-
 
 
 
