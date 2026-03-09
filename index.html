@@ -833,6 +833,7 @@
               <option value="manual">Sort: Manual order</option>
               <option value="added-desc">Sort: Date added (newest first)</option>
               <option value="added-asc">Sort: Date added (oldest first)</option>
+              <option value="tags-asc">Sort: Tag count (fewest first)</option>
             </select>
           </div>
         </div>
@@ -1083,6 +1084,9 @@
     }
     if(state.ui.sort === "added-desc"){
       return [...items].sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0) || a.id.localeCompare(b.id));
+    }
+    if(state.ui.sort === "tags-asc"){
+      return [...items].sort((a, b) => (a.tags.length - b.tags.length) || a.id.localeCompare(b.id));
     }
     return items;
   }
@@ -2088,7 +2092,6 @@
 </script>
 </body>
 </html>
-
 
 
 
