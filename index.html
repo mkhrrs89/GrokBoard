@@ -1248,7 +1248,7 @@
       }
       const updated = addTagsToItem(id, tags);
       if(updated){
-        refreshAfterTagMutation([id]);
+        refreshAfterTagMutation([id], { changedTags: tags });
         showToast("Tags added ✨");
       }
     };
@@ -1266,7 +1266,7 @@
         const tag = btn.getAttribute("data-tag") || "";
         const updated = removeTagFromItem(id, tag);
         if(updated){
-          refreshAfterTagMutation([id]);
+          refreshAfterTagMutation([id], { changedTags: [tag] });
           showToast("Tag deleted");
         }
       });
@@ -1322,14 +1322,21 @@
       state.ui.selected = [];
       tagInput.value = "";
       save();
-      refreshAfterTagMutation(updatedIds, { clearSelection: true });
+      refreshAfterTagMutation(updatedIds, { clearSelection: true, changedTags: tagsToAdd });
       showToast(`Added tags to ${updatedCount} video${updatedCount === 1 ? "" : "s"}`);
     }
   }
 
-  function shouldRerenderGridAfterTagMutation(){
-    const hasActiveFilters = Object.values(state.ui.tagFilters || {}).some(mode => mode === "include" || mode === "exclude");
-    return hasActiveFilters || state.ui.sort === "tags-asc";
+  function shouldRerenderGridAfterTagMutation(changedTags = []){
+    if(state.ui.sort === "tags-asc") return true;
+
+    const activeFilterTags = Object.entries(state.ui.tagFilters || {})
+      .filter(([, mode]) => mode === "include" || mode === "exclude")
+      .map(([tag]) => tag);
+    if(activeFilterTags.length === 0) return false;
+
+    const changed = new Set((Array.isArray(changedTags) ? changedTags : []).map(normalizeTag));
+    return activeFilterTags.some(tag => changed.has(tag));
   }
 
   function renderTagPills(item){
@@ -1356,7 +1363,7 @@
   }
 
   function refreshAfterTagMutation(ids, opts = {}){
-    if(shouldRerenderGridAfterTagMutation()){
+    if(shouldRerenderGridAfterTagMutation(opts.changedTags)){
       render();
       return;
     }
@@ -2140,7 +2147,6 @@
 </script>
 </body>
 </html>
-
 
 
 
