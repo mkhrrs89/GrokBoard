@@ -1248,8 +1248,7 @@
       }
       const updated = addTagsToItem(id, tags);
       if(updated){
-        openTagPopupId = null;
-        render();
+        refreshAfterTagMutation([id]);
         showToast("Tags added ✨");
       }
     };
@@ -1267,8 +1266,7 @@
         const tag = btn.getAttribute("data-tag") || "";
         const updated = removeTagFromItem(id, tag);
         if(updated){
-          openTagPopupId = null;
-          render();
+          refreshAfterTagMutation([id]);
           showToast("Tag deleted");
         }
       });
@@ -1320,12 +1318,64 @@
     }
 
     if(updatedCount > 0){
+      const updatedIds = [...selectedIds];
       state.ui.selected = [];
       tagInput.value = "";
       save();
-      render();
+      refreshAfterTagMutation(updatedIds, { clearSelection: true });
       showToast(`Added tags to ${updatedCount} video${updatedCount === 1 ? "" : "s"}`);
     }
+  }
+
+  function shouldRerenderGridAfterTagMutation(){
+    const hasActiveFilters = Object.values(state.ui.tagFilters || {}).some(mode => mode === "include" || mode === "exclude");
+    return hasActiveFilters || state.ui.sort === "tags-asc";
+  }
+
+  function renderTagPills(item){
+    const tagPills = item.tags.slice(0,6).map(t => `<span class="tagPill">#${escapeHtml(t)}</span>`).join("");
+    const more = item.tags.length > 6 ? `<span class="tagPill">+${item.tags.length-6}</span>` : "";
+    const warn = looksLikeVideoUrl(item.mediaUrl) ? "" : `<span class="tagPill" title="May not be a direct video URL">link?</span>`;
+    return `${warn}${tagPills}${more}`;
+  }
+
+  function updateCardTagsInPlace(id){
+    const card = grid.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
+    const item = state.items.find(x => x.id === id);
+    if(!card || !item) return;
+
+    const tagsLine = card.querySelector(".tagsLine");
+    if(tagsLine){
+      tagsLine.innerHTML = renderTagPills(item);
+    }
+
+    if(openTagPopupId === id){
+      closeTagPopup();
+      renderTagPopupForCard(id);
+    }
+  }
+
+  function refreshAfterTagMutation(ids, opts = {}){
+    if(shouldRerenderGridAfterTagMutation()){
+      render();
+      return;
+    }
+
+    const touchedIds = Array.isArray(ids) ? ids : [];
+    touchedIds.forEach(updateCardTagsInPlace);
+
+    if(opts.clearSelection){
+      touchedIds.forEach((id) => {
+        const card = grid.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
+        if(!card) return;
+        card.classList.remove("selected", "checked");
+        const selectInput = card.querySelector('input[data-act="select"]');
+        if(selectInput) selectInput.checked = false;
+      });
+    }
+
+    renderTags();
+    updateSelectionSummary();
   }
 
   function setTagFilterState(tag, mode){
@@ -1871,9 +1921,7 @@
     grid.dataset.sort = state.ui.sort || "manual";
 
     grid.innerHTML = slice.map(it => {
-      const tagPills = it.tags.slice(0,6).map(t => `<span class="tagPill">#${escapeHtml(t)}</span>`).join("");
-      const more = it.tags.length > 6 ? `<span class="tagPill">+${it.tags.length-6}</span>` : "";
-      const warn = looksLikeVideoUrl(it.mediaUrl) ? "" : `<span class="tagPill" title="May not be a direct video URL">link?</span>`;
+      const tagsMarkup = renderTagPills(it);
       const src = it.mediaUrl || it.sourceUrl;
       const selected = selectedSet.has(it.id);
 
@@ -1902,7 +1950,7 @@
             </button>
           </div>
           <div class="cardBar">
-            <div class="tagsLine">${warn}${tagPills}${more}</div>
+            <div class="tagsLine">${tagsMarkup}</div>
             <div class="actions">
               <button class="iconBtn danger" data-act="del" title="Delete">✕</button>
             </div>
@@ -2092,7 +2140,6 @@
 </script>
 </body>
 </html>
-
 
 
 
