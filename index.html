@@ -905,7 +905,8 @@
 
   // CHANGE THIS after you deploy your Worker:
   const RESOLVER_BASE = "https://nameless-morning-980f.mkhrrs89.workers.dev";
-
+  const RESOLVER_TIMEOUT_MS = 8000;
+  let grokResolverEnabled = true;
 
   /** @type {{items: Array<{id:string,sourceUrl:string,mediaUrl:string,tags:string[],addedAt:number}>, ui:{tagFilters:Record<string,"include"|"exclude">,tagMatchMode:"all"|"any",page:number,selected:string[],sort:string}}} */
   let state = {
@@ -1113,11 +1114,32 @@
   }
 
   async function resolveGrokPost(url){
-    const endpoint = `${RESOLVER_BASE}/resolve?url=${encodeURIComponent(url)}`;
-    const r = await fetch(endpoint);
-    const j = await r.json();
-    if(!j.ok) throw new Error(j.error || "Resolve failed");
-    return j.mediaUrl;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(new Error("Resolver timeout")), RESOLVER_TIMEOUT_MS);
+
+    try{
+      const endpoint = `${RESOLVER_BASE}/resolve?url=${encodeURIComponent(url)}`;
+      const r = await fetch(endpoint, { signal: controller.signal });
+      if(!r.ok) throw new Error(`Resolver returned ${r.status}`);
+
+      const j = await r.json();
+      if(!j.ok || !j.mediaUrl) throw new Error(j.error || "Resolve failed");
+      return j.mediaUrl;
+    }finally{
+      clearTimeout(timeoutId);
+    }
+  }
+
+  function isResolverNetworkFailure(error){
+    if(!error) return false;
+    const name = String(error.name || "");
+    const message = String(error.message || "").toLowerCase();
+    return name === "AbortError"
+      || message.includes("failed to fetch")
+      || message.includes("networkerror")
+      || message.includes("load failed")
+      || message.includes("resolver returned ")
+      || message.includes("resolver timeout");
   }
 
   // --- Actions
@@ -1131,15 +1153,22 @@
 
     let mediaUrl = url;
 
-    if (isGrokPost(url)) {
+    if(isGrokPost(url) && grokResolverEnabled){
       showToast("Resolving Grok link…");
-      try {
+      try{
         mediaUrl = await resolveGrokPost(url);
         showToast("Resolved ✅");
-      } catch (e) {
-        console.warn(e);
-        showToast("Couldn’t resolve 😬 — saved as-is");
+      }catch(e){
+        console.warn("Grok resolver failed:", e);
+        if(isResolverNetworkFailure(e)){
+          grokResolverEnabled = false;
+          showToast("Grok resolver is offline — saving post links directly");
+        }else{
+          showToast("Couldn’t resolve 😬 — saved as-is");
+        }
       }
+    }else if(isGrokPost(url)){
+      showToast("Grok resolver is offline — saving post link directly");
     }
 
     const item = { id: uid(), sourceUrl: url, mediaUrl, tags, addedAt: now() };
@@ -2147,9 +2176,3 @@
 </script>
 </body>
 </html>
-
-
-
-
-
-
